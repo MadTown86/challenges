@@ -48,12 +48,10 @@ class Othello:
                     q_print.append("\U000026AA")
             print(q_print)
 
-    def _posit(self, x: int, y: int) -> int:
-        return self.board[x, y]
-
     def _traverse_flip(self, x: int, y: int, black=True) -> None:
+        # Traverses all directions from given point and flips any that fit the rule
         direct_dict = {
-            'n': lambda x, y: itertools.zip_longest(range(x-1, -1, -1), '',fillvalue=y) if x >= 1 else (0, y),
+            'n': lambda x, y: itertools.zip_longest(range(x-1, -1, -1), '', fillvalue=y) if x >= 1 else (0, y),
             's': lambda x, y: itertools.zip_longest(range(x+1, 8, 1), '', fillvalue=y) if x < 6 else (7, y),
             'e': lambda x, y: itertools.zip_longest(range(y+1, 8, 1), '', fillvalue=x) if y < 6 else (x, 7),
             'w': lambda x, y: itertools.zip_longest(range(y-1, -1, -1), '', fillvalue=x) if y >= 1 else (x, 0),
@@ -96,18 +94,8 @@ class Othello:
         U+1F7E5	- red square
         black = 2
         white = 3
-        For any move the first things to check:
-        X is ROW, Y is COL
-        1. Is space empty, here meaning does value == 0
-        2. MOVE RULES:
-            2.1 - OppositePieceChecks -
-                a) (x-1, y), (x+1, y), (x, y-1), (x, y+1), (x-1, y-1), (x-1, y+1), (x+1, y-1), (x+1, y+1)
-
-            2.2 - Check Existing Pieces at correct locations and are correct color
-                b) (x-2, y), (x+2, y), (x, y-2), (x, y+2), (x-2, y-2), (x-2, y+2), (x+2, y-2), (x+2, y-2)
-
         """
-        # Check for opposite first black checks for white, white checks for black
+        # Check for adjacent pieces, ensuring opposite color
         p_opposite = {
             'n': lambda x, y, d: self.board[x-1][y] == d if x >= 1 else False,
             's': lambda x, y, d: self.board[x+1][y] == d if x <= 6 else False,
@@ -118,6 +106,7 @@ class Othello:
             'sw': lambda x, y, d: self.board[x+1][y-1] == d if x <= 6 and y >= 1 else False,
             'se': lambda x, y, d: self.board[x+1][y+1] == d if x <= 6 and y <= 6 else False,
         }
+        # Check for
         p_movecheck = {
             'n': lambda x, y, d: self.board[x-2][y] == d if x >= 2 else False,
             's': lambda x, y, d: self.board[x+2][y] == d if x <= 5 else False,
