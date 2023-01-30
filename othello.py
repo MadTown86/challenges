@@ -47,18 +47,23 @@ class Othello:
                 else:
                     q_print.append("\U000026AA")
             print(q_print)
+    def _movesquery(self, TURN):
+        if TURN == BLACK:
+
+        x, y = 0, 0
+
 
     def _traverse_flip(self, x: int, y: int, black=True) -> None:
         # Traverses all directions from given point and flips any that fit the rule
         direct_dict = {
-            'n': lambda x, y: itertools.zip_longest(range(x-1, -1, -1), '', fillvalue=y) if x >= 1 else (0, y),
-            's': lambda x, y: itertools.zip_longest(range(x+1, 8, 1), '', fillvalue=y) if x < 6 else (7, y),
-            'e': lambda x, y: itertools.zip_longest(range(y+1, 8, 1), '', fillvalue=x) if y < 6 else (x, 7),
-            'w': lambda x, y: itertools.zip_longest(range(y-1, -1, -1), '', fillvalue=x) if y >= 1 else (x, 0),
-            'ne': lambda x, y: zip(range(x-1, -1, -1), range(y+1, 8, 1)) if x >= 1 and y <= 6 else (0, 7),
-            'se': lambda x, y: zip(range(x+1, 8, 1), range(y+1, 8, 1)) if x <= 6 and y <= 6 else (7, 7),
-            'nw': lambda x, y: zip(range(x-1, -1, -1), range(y-1, -1, -1)) if x >= 1 and y > 1 else (0, 0),
-            'sw': lambda x, y: zip(range(x+1, 8, 1), range(y-1, -1, 1)) if x <= 6 and y > 1 else (7, 0)
+            'n': lambda x, y: itertools.zip_longest(range(x-1, -1, -1), '', fillvalue=y) if x >= 1 else [(0, y)],
+            's': lambda x, y: itertools.zip_longest(range(x+1, 8, 1), '', fillvalue=y) if x <= 6 else [(7, y)],
+            'e': lambda x, y: itertools.zip_longest(range(y+1, 8, 1), '', fillvalue=x) if y <= 6 else [(x, 7)],
+            'w': lambda x, y: itertools.zip_longest(range(y-1, -1, -1), '', fillvalue=x) if y >= 1 else [(x, 0)],
+            'ne': lambda x, y: zip(range(x-1, -1, -1), range(y+1, 8, 1)) if x >= 1 and y <= 6 else [(0, 7)],
+            'se': lambda x, y: zip(range(x+1, 8, 1), range(y+1, 8, 1)) if x <= 6 and y <= 6 else [(7, 7)],
+            'nw': lambda x, y: zip(range(x-1, -1, -1), range(y-1, -1, -1)) if x >= 1 and y > 1 else [(0, 0)],
+            'sw': lambda x, y: zip(range(x+1, 8, 1), range(y-1, -1, 1)) if x <= 6 and y > 1 else [(7, 0)]
         }
 
         def reduce_redundancy(x: int, y: int, black=True):
