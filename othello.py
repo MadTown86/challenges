@@ -15,6 +15,7 @@ https://asciinema.org/a/CtCXajLMGWqEEF4o7pdWpByBU
 
 BLACK = 2
 WHITE = 3
+EMPTY = 0
 TURN = BLACK
 
 class GameFinished(Exception):
@@ -31,6 +32,10 @@ class Othello:
         self.board[3][4] = 2
         self.board[4][3] = 2
         self.board[4][4] = 3
+        self.black = [(3, 3), (4, 4)]
+        self.white = [(3, 4), (4, 3)]
+        self.black_moves = []
+        self.white_moves = []
 
 
 
@@ -48,8 +53,75 @@ class Othello:
                     q_print.append("\U000026AA")
             print(q_print)
     def _movesquery(self, TURN):
-        if TURN == BLACK:
-            x, y = 0, 0
+        p_opposite = {
+            'n': lambda x, y, d: self.board[x - 1][y] == d if x >= 1 else False,
+            's': lambda x, y, d: self.board[x + 1][y] == d if x <= 6 else False,
+            'w': lambda x, y, d: self.board[x][y - 1] == d if y >= 1 else False,
+            'e': lambda x, y, d: self.board[x][y + 1] == d if y <= 6 else False,
+            'nw': lambda x, y, d: self.board[x - 1][y - 1] == d if x >= 1 and y >= 1 else False,
+            'ne': lambda x, y, d: self.board[x - 1][y + 1] == d if x >= 1 and y <= 6 else False,
+            'sw': lambda x, y, d: self.board[x + 1][y - 1] == d if x <= 6 and y >= 1 else False,
+            'se': lambda x, y, d: self.board[x + 1][y + 1] == d if x <= 6 and y <= 6 else False,
+        }
+        # Check for
+        p_movecheck = {
+            'n': lambda x, y, d: self.board[x - 2][y] == d if x >= 2 else False,
+            's': lambda x, y, d: self.board[x + 2][y] == d if x <= 5 else False,
+            'w': lambda x, y, d: self.board[x][y - 2] == d if y >= 2 else False,
+            'e': lambda x, y, d: self.board[x][y + 2] == d if y <= 5 else False,
+            'nw': lambda x, y, d: self.board[x - 2][y - 2] == d if x >= 2 and y >= 2 else False,
+            'ne': lambda x, y, d: self.board[x - 2][y + 2] == d if x >= 2 and y <= 5 else False,
+            'sw': lambda x, y, d: self.board[x + 2][y - 2] == d if x <= 5 and y >= 2 else False,
+            'se': lambda x, y, d: self.board[x + 2][y + 2] == d if x <= 5 and y <= 5 else False,
+        }
+
+        neighbors = {
+            'n': lambda x, y: (x - 1, y),
+            's': lambda x, y: (x + 1, y),
+            'e': lambda x, y: (x, y + 1),
+            'w': lambda x, y: (x, y - 1),
+            'ne': lambda x, y: (x - 1, y + 1),
+            'se': lambda x, y: (x + 1, y + 1),
+            'nw': lambda x, y: (x - 1, y - 1),
+            'sw': lambda x, y: (x + 1, y - 1)
+        }
+        b_ops = []
+        b_movs = []
+        w_ops = []
+        w_movs = []
+        for x, y in self.black:
+            for key, val in p_opposite.items():
+                if val(x, y, WHITE):
+                    b_ops.append(key)
+            for key, val in p_movecheck.items():
+                if val(x, y, EMPTY):
+                    b_movs.append(key)
+            for item in b_ops:
+                if item in b_movs:
+                    self.black_moves.append(neighbors[item](x, y))
+
+        for x, y in self.white:
+            for key, val in p_opposite.items():
+                if val(x, y, BLACK):
+                    w_ops.append(key)
+            for key, val in p_movecheck.items():
+                if val(x, y, EMPTY):
+                    w_movs.append(key)
+            for item in w_ops:
+                if item in w_movs:
+                    self.white_moves.append(neighbors[item](x, y))
+
+        if len(self.black_moves) == 0 and TURN == BLACK:
+            if len(self.black) > len(self.white):
+                raise GameFinished(f'BLACK WINS: {len(self.black)}')
+            else:
+                raise GameFinished(f'WHITE WINS: {len(self.white)}')
+        elif len(self.white_moves) == 0 and TURN == WHITE:
+            if len(self.black) > len(self.white):
+                raise GameFinished(f'BLACK WINS: {len(self.black)}')
+            else:
+                raise GameFinished(f'WHITE WINS: {len(self.white)}')
+
 
 
     def _traverse_flip(self, x: int, y: int, black=True) -> None:
@@ -100,38 +172,7 @@ class Othello:
         white = 3
         """
         # Check for adjacent pieces, ensuring opposite color
-        p_opposite = {
-            'n': lambda x, y, d: self.board[x-1][y] == d if x >= 1 else False,
-            's': lambda x, y, d: self.board[x+1][y] == d if x <= 6 else False,
-            'w': lambda x, y, d: self.board[x][y-1] == d if y >= 1 else False,
-            'e': lambda x, y, d: self.board[x][y+1] == d if y <= 6 else False,
-            'nw': lambda x, y, d: self.board[x-1][y-1] == d if x >= 1 and y >= 1 else False,
-            'ne': lambda x, y, d: self.board[x-1][y+1] == d if x >= 1 and y <= 6 else False,
-            'sw': lambda x, y, d: self.board[x+1][y-1] == d if x <= 6 and y >= 1 else False,
-            'se': lambda x, y, d: self.board[x+1][y+1] == d if x <= 6 and y <= 6 else False,
-        }
-        # Check for
-        p_movecheck = {
-            'n': lambda x, y, d: self.board[x-2][y] == d if x >= 2 else False,
-            's': lambda x, y, d: self.board[x+2][y] == d if x <= 5 else False,
-            'w': lambda x, y, d: self.board[x][y-2] == d if y >= 2 else False,
-            'e': lambda x, y, d: self.board[x][y+2] == d if y <= 5 else False,
-            'nw': lambda x, y, d: self.board[x-2][y-2] == d if x >= 2 and y >= 2 else False,
-            'ne': lambda x, y, d: self.board[x-2][y+2] == d if x >= 2 and y <= 5 else False,
-            'sw': lambda x, y, d: self.board[x+2][y-2] == d if x <= 5 and y >= 2 else False,
-            'se': lambda x, y, d: self.board[x+2][y+2] == d if x <= 5 and y <= 5 else False,
-        }
 
-        neighbors = {
-            'n': lambda x, y: (x-1, y),
-            's': lambda x, y: (x+1, y),
-            'e': lambda x, y: (x, y+1),
-            'w': lambda x, y: (x, y-1),
-            'ne': lambda x, y: (x-1, y+1),
-            'se': lambda x, y: (x+1, y+1),
-            'nw': lambda x, y: (x-1, y-1),
-            'sw': lambda x, y: (x+1, y-1)
-        }
 
         p_opbasket = []
         m_mcbasket = []
