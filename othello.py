@@ -49,8 +49,7 @@ class Othello:
             print(q_print)
     def _movesquery(self, TURN):
         if TURN == BLACK:
-
-        x, y = 0, 0
+            x, y = 0, 0
 
 
     def _traverse_flip(self, x: int, y: int, black=True) -> None:
