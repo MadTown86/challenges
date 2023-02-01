@@ -37,8 +37,6 @@ class Othello:
         self.black_moves = []
         self.white_moves = []
 
-
-
     def _boardprint(self):
 
         for row in self.board:
@@ -53,6 +51,7 @@ class Othello:
                     q_print.append("\U000026AA")
             print(q_print)
     def _movesquery(self, TURN):
+        # Check adjacent positions from self for existence of opposite color discs
         p_opposite = {
             'n': lambda x, y, d: self.board[x - 1][y] == d if x >= 1 else False,
             's': lambda x, y, d: self.board[x + 1][y] == d if x <= 6 else False,
@@ -63,7 +62,7 @@ class Othello:
             'sw': lambda x, y, d: self.board[x + 1][y - 1] == d if x <= 6 and y >= 1 else False,
             'se': lambda x, y, d: self.board[x + 1][y + 1] == d if x <= 6 and y <= 6 else False,
         }
-        # Check for
+        # Check for same color pieces from self position to ensure move is valid
         p_movecheck = {
             'n': lambda x, y, d: self.board[x - 2][y] == d if x >= 2 else False,
             's': lambda x, y, d: self.board[x + 2][y] == d if x <= 5 else False,
@@ -85,6 +84,17 @@ class Othello:
             'nw': lambda x, y: (x - 1, y - 1),
             'sw': lambda x, y: (x + 1, y - 1)
         }
+
+        moves = {
+            'n': lambda x, y: (x - 2, y),
+            's': lambda x, y: (x + 2, y),
+            'e': lambda x, y: (x, y + 2),
+            'w': lambda x, y: (x, y - 2),
+            'ne': lambda x, y: (x - 2, y + 2),
+            'se': lambda x, y: (x + 2, y + 2),
+            'nw': lambda x, y: (x - 2, y - 2),
+            'sw': lambda x, y: (x + 2, y - 2)
+        }
         b_ops = []
         b_movs = []
         w_ops = []
@@ -98,7 +108,7 @@ class Othello:
                     b_movs.append(key)
             for item in b_ops:
                 if item in b_movs:
-                    self.black_moves.append(neighbors[item](x, y))
+                    self.black_moves.append(moves[item](x, y))
 
         for x, y in self.white:
             for key, val in p_opposite.items():
@@ -109,7 +119,7 @@ class Othello:
                     w_movs.append(key)
             for item in w_ops:
                 if item in w_movs:
-                    self.white_moves.append(neighbors[item](x, y))
+                    self.white_moves.append(moves[item](x, y))
 
         if len(self.black_moves) == 0 and TURN == BLACK:
             if len(self.black) > len(self.white):
@@ -164,59 +174,13 @@ class Othello:
 
     def _updateboard(self, x: int, y: int, black=True) -> None:
         global TURN
-        """
-        U+26AB	- black circle
-        U+26AA	- whtie circle
-        U+1F7E5	- red square
-        black = 2
-        white = 3
-        """
-        # Check for adjacent pieces, ensuring opposite color
-
-
-        p_opbasket = []
-        m_mcbasket = []
-        move = False
-
-        if self.board[x][y] != 0:
-            raise AgainstGameRules
         if black:
-            for key, val in p_opposite.items():
-                if val(x, y, WHITE):
-                    p_opbasket.append(key)
-            for key, val in p_movecheck.items():
-                if val(x, y, BLACK):
-                    m_mcbasket.append(key)
-            for a in m_mcbasket:
-                if a in p_opbasket:
-                    self.board[x][y] = BLACK
-                    self.board[*neighbors[a](x, y)] = BLACK
-                    self._traverse_flip(x, y)
-                    move = True
-                    TURN = WHITE
-                    break
-                else:
-                    continue
-            if not move:
-                raise AgainstGameRules()
-        else:
-            for key, val in p_opposite.items():
-                if val(x, y, BLACK):
-                    p_opbasket.append(key)
-            for key, val in p_movecheck.items():
-                if val(x, y, WHITE):
-                    m_mcbasket.append(key)
-            for a in m_mcbasket:
-                if a in p_opbasket:
-                    self.board[x][y] = WHITE
-                    self.board[*neighbors[a](x, y)] = WHITE
-                    self._traverse_flip(x, y, black=False)
-                    move = True
-                    TURN = BLACK
-                else:
-                    continue
-            if not move:
-                raise AgainstGameRules()
+            if not self.black_moves or if not self.white_moves:
+                if len(self.black) > len(self.white):
+
+                raise GameFinished
+            if x, y in self.black_moves[]:
+
 
     def inputloop(self):
         self._boardprint()
