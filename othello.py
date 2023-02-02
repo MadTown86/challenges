@@ -167,6 +167,8 @@ class Othello:
                 w = False
                 flip_bin = []
                 for inx, iny in val(x, y):
+                    if self.board[inx][iny] == 0:
+                        break
                     if self.board[inx][iny] == color and w:
                         for flipx, flipy in flip_bin:
                             self.board[flipx][flipy] = color
@@ -183,8 +185,7 @@ class Othello:
                         continue
                     if self.board[inx][iny] == color and not w:
                         break
-                    if self.board[inx][iny] == 0:
-                        break
+
 
 
         reduce_redundancy(x, y, black)
