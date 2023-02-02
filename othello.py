@@ -1,6 +1,7 @@
 # Othello, 2:30 start
 import itertools
 import numpy
+import random
 """
 board  8x8 array
 
@@ -32,13 +33,12 @@ class Othello:
         self.board[3][4] = 2
         self.board[4][3] = 2
         self.board[4][4] = 3
-        self.black = [(3, 3), (4, 4)]
-        self.white = [(3, 4), (4, 3)]
+        self.black = [(3, 4), (4, 3)]
+        self.white = [(3, 3), (4, 4)]
         self.black_moves = []
         self.white_moves = []
 
     def _boardprint(self):
-
         for row in self.board:
             q_print = []
             for place in row:
@@ -73,6 +73,11 @@ class Othello:
             'sw': lambda x, y, d: self.board[x + 2][y - 2] == d if x <= 5 and y >= 2 else False,
             'se': lambda x, y, d: self.board[x + 2][y + 2] == d if x <= 5 and y <= 5 else False,
         }
+        # def moves(r, c, R, C):
+        #     offsets = [(i, j) for i in range(-1, 2) for j in range(-1, 2) if not i == j == 0]
+        #     return [(r + i, c + j) for i, j in offsets if 0 <= r + i < R and 0 <= c + j < C]
+        # print(moves(0, 0, 10, 10))
+        # print(moves(5, 5, 6, 7))
 
         neighbors = {
             'n': lambda x, y: (x - 1, y),
@@ -96,19 +101,18 @@ class Othello:
             'sw': lambda x, y: (x + 2, y - 2)
         }
         b_ops = []
-        b_movs = []
         w_ops = []
         w_movs = []
         for x, y in self.black:
             for key, val in p_opposite.items():
                 if val(x, y, WHITE):
                     b_ops.append(key)
-            for key, val in p_movecheck.items():
-                if val(x, y, EMPTY):
-                    b_movs.append(key)
             for item in b_ops:
-                if item in b_movs:
+                if p_movecheck[item](x, y, EMPTY):
                     self.black_moves.append(moves[item](x, y))
+            # for item in b_ops:
+            #     if item in b_movs:
+            #         self.black_moves.append(moves[item](x, y))
 
         for x, y in self.white:
             for key, val in p_opposite.items():
@@ -172,20 +176,38 @@ class Othello:
 
         reduce_redundancy(x, y, black)
 
+    def _computer(self):
+        if self.white_moves:
+            x, y = random.choice(self.white_moves)
+
+
     def _updateboard(self, x: int, y: int, black=True) -> None:
         global TURN
-        if black:
-            if not self.black_moves or if not self.white_moves:
-                if len(self.black) > len(self.white):
-
+        won = ''
+        output = f'{won} the round! : WHITE: {len(self.white)} -- BLACK: {len(self.black)}'
+        if not len(self.black_moves) or not len(self.white_moves):
+            if len(self.black) > len(self.white):
+                won = 'BLACK'
+                print(output)
                 raise GameFinished
-            if x, y in self.black_moves[]:
+            else:
+                won = 'WHITE'
+                print(output)
+                raise GameFinished
+        if black:
+            if (x, y) in self.black_moves:
+                self.board[x][y] = BLACK
+                self.black.append((x, y))
+                self._traverse_flip(x, y)
+        else:
+            self._computer()
 
 
     def inputloop(self):
         self._boardprint()
         while True:
             if TURN == BLACK:
+                self._movesquery(TURN)
                 try:
                     black_input = [int(x) for x in input("BLACK TURN: Please enter X Y coordinates between 0 and 7").split()]
                 except ValueError:
@@ -198,13 +220,14 @@ class Othello:
                     print("Please enter in values between 0 and 7")
                     continue
                 else:
-                    try:
-                        self._updateboard(black_input[0], black_input[1])
-                    except AgainstGameRules:
-                        continue
+                    # try:
+                    self._updateboard(black_input[0], black_input[1])
+                    # except AgainstGameRules:
+                    #     continue
             self._boardprint()
 
             if TURN == WHITE:
+                self._movesquery(TURN)
                 try:
                     white_input = [int(x) for x in input("WHITE TURN: Please enter X Y coordinates between 0 and 7").split()]
                 except ValueError:
@@ -217,10 +240,10 @@ class Othello:
                     print("Please enter in values between 0 and 7")
                     continue
                 else:
-                    try:
-                        self._updateboard(white_input[0], white_input[1], black=False)
-                    except AgainstGameRules:
-                        continue
+                # try:
+                    self._updateboard(white_input[0], white_input[1], black=False)
+                # except AgainstGameRules:
+                #     continue
 
             self._boardprint()
 
