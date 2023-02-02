@@ -109,9 +109,10 @@ class Othello:
             for key, val in p_opposite.items():
                 if val(x, y, WHITE):
                     b_ops.append(key)
-            for item in b_ops:
-                if p_movecheck[item](x, y, EMPTY):
-                    self.black_moves.append(moves[item](x, y))
+                if b_ops:
+                    item = b_ops.pop(0)
+                    if p_movecheck[item](x, y, EMPTY):
+                        self.black_moves.append(moves[item](x, y))
             # for item in b_ops:
             #     if item in b_movs:
             #         self.black_moves.append(moves[item](x, y))
@@ -120,9 +121,10 @@ class Othello:
             for key, val in p_opposite.items():
                 if val(x, y, BLACK):
                     w_ops.append(key)
-            for item in w_ops:
-                if p_movecheck[item](x, y, EMPTY):
-                    self.white_moves.append(moves[item](x, y))
+                if w_ops:
+                    item = w_ops.pop(0)
+                    if p_movecheck[item](x, y, EMPTY):
+                        self.white_moves.append(moves[item](x, y))
 
         if len(self.black_moves) == 0 and TURN == BLACK:
             if len(self.black) > len(self.white):
@@ -142,13 +144,16 @@ class Othello:
         direct_dict = {
             'n': lambda x, y: itertools.zip_longest(range(x-1, -1, -1), '', fillvalue=y) if x >= 1 else [(0, y)],
             's': lambda x, y: itertools.zip_longest(range(x+1, 8, 1), '', fillvalue=y) if x <= 6 else [(7, y)],
-            'e': lambda x, y: itertools.zip_longest(range(y+1, 8, 1), '', fillvalue=x) if y <= 6 else [(x, 7)],
-            'w': lambda x, y: itertools.zip_longest(range(y-1, -1, -1), '', fillvalue=x) if y >= 1 else [(x, 0)],
+            'e': lambda x, y: itertools.zip_longest('', range(y+1, 8, 1), fillvalue=x) if y <= 6 else [(x, 7)],
+            'w': lambda x, y: itertools.zip_longest('', range(y-1, -1, -1), fillvalue=x) if y >= 1 else [(x, 0)],
             'ne': lambda x, y: zip(range(x-1, -1, -1), range(y+1, 8, 1)) if x >= 1 and y <= 6 else [(0, 7)],
             'se': lambda x, y: zip(range(x+1, 8, 1), range(y+1, 8, 1)) if x <= 6 and y <= 6 else [(7, 7)],
-            'nw': lambda x, y: zip(range(x-1, -1, -1), range(y-1, -1, -1)) if x >= 1 and y > 1 else [(0, 0)],
-            'sw': lambda x, y: zip(range(x+1, 8, 1), range(y-1, -1, 1)) if x <= 6 and y > 1 else [(7, 0)]
+            'nw': lambda x, y: zip(range(x-1, -1, -1), range(y-1, -1, -1)) if x >= 1 and y >= 1 else [(0, 0)],
+            'sw': lambda x, y: zip(range(x+1, 8, 1), range(y-1, -1, -1)) if x <= 6 and y >= 1 else [(7, 0)]
         }
+
+        for key, val in direct_dict.items():
+            print(f'{key} --- VAL: {[a for a in val(x, y)]}')
 
         # Flips over opposite color nodes between current players nodes after valid move chosen
         def reduce_redundancy(x: int, y: int, black=True):
@@ -185,6 +190,7 @@ class Othello:
         reduce_redundancy(x, y, black)
 
     def _computer(self):
+        global TURN
         # Random automation of computer's choices
         for moves in self.white_moves:
             print(moves)
@@ -193,6 +199,7 @@ class Othello:
             print(f'WHITE CHOOSES (X, Y) - {x} {y}')
             self.board[x][y] = WHITE
             self._traverse_flip(x, y, black=False)
+            TURN = BLACK
 
 
     def _updateboard(self, x: int, y: int, black=True) -> None:
@@ -213,11 +220,15 @@ class Othello:
                 self.board[x][y] = BLACK
                 self.black.add((x, y))
                 self._traverse_flip(x, y)
+                TURN = WHITE
+            else:
+                raise AgainstGameRules
         elif not black:
             if (x, y) in self.black_moves:
                 self.board[x][y] = BLACK
                 self.white.add((x, y))
                 self._traverse_flip(x, y, black=False)
+                TURN = BLACK
 
 
     def inputloop(self):
@@ -242,11 +253,10 @@ class Othello:
                     print("Please enter in values between 0 and 7")
                     continue
                 else:
-                    # try:
-                    self._updateboard(black_input[0], black_input[1])
-                    TURN = WHITE
-                    # except AgainstGameRules:
-                    #     continue
+                    try:
+                        self._updateboard(black_input[0], black_input[1])
+                    except AgainstGameRules:
+                        continue
             self._boardprint()
 
             if TURN == WHITE:
@@ -264,15 +274,14 @@ class Othello:
                         print("Please enter in values between 0 and 7")
                         continue
                     else:
-                    # try:
-                        self._updateboard(white_input[0], white_input[1], black=False)
-                    # except AgainstGameRules:
-                    #     continue
+                        try:
+                            self._updateboard(white_input[0], white_input[1], black=False)
+                        except AgainstGameRules:
+                            continue
                 else:
                     try:
                         self._movesquery(TURN)
                         self._computer()
-                        TURN = BLACK
                     except GameFinished:
                         pass
 
