@@ -19,15 +19,32 @@ WHITE = 3
 EMPTY = 0
 TURN = BLACK
 
+
 class GameFinished(Exception):
-    pass
+    def __init__(self, black: int, white: int, won: 'str') -> None:
+        super().__init__()
+        self.black = black
+        self.white = white
+        self.won = won
+        self.msgs = [
+            f'BLACK PIECES: {black}',
+            f'WHITE PIECES: {white}',
+            f'WON: {won}'
+        ]
+    def __call__(self):
+        for msg in self.msgs:
+            print(msg)
 
 class AgainstGameRules(Exception):
-    print("You entered invalid coordinates, either a piece was there already or you didn't adhere to the game rules")
-    pass
+    def __init__(self):
+        self.msg = "You entered invalid coordinates, either a piece was there already or you didn't adhere to the game rules"
+
+    def __call__(self):
+        return self.msg
 
 class Othello:
-    def __init__(self, computer=True):
+
+    def __init__(self):
         self.board = numpy.array(8*[8*[0]])
         self.board[3][3] = 3
         self.board[3][4] = 2
@@ -37,8 +54,11 @@ class Othello:
         self.white = {(3, 3), (4, 4)}
         self.black_moves = []
         self.white_moves = []
-        self.computer = computer
+        self.computer_b = False
+        self.computer_w = False
+        self.won = None
 
+    # Prints the current board layout
     def _boardprint(self):
         for row in self.board:
             q_print = []
@@ -51,6 +71,8 @@ class Othello:
                 else:
                     q_print.append("\U000026AA")
             print(q_print)
+
+    #Checks all current positions in self.white/black_moves for possible moves and bins them
     def _movesquery(self, TURN):
         self.black_moves = []
         self.white_moves = []
@@ -126,16 +148,21 @@ class Othello:
                     if p_movecheck[item](x, y, EMPTY):
                         self.white_moves.append(moves[item](x, y))
 
+        print(f'BLACK MOVES BIN: {len(self.black_moves)}')
+        print(f'WHITE MOVES BIN: {len(self.white_moves)}')
+
         if len(self.black_moves) == 0 and TURN == BLACK:
             if len(self.black) > len(self.white):
-                raise GameFinished(f'BLACK WINS: {len(self.black)}')
+                raise GameFinished(black=len(self.black), white=len(self.white), won='BLACK')
             else:
-                raise GameFinished(f'WHITE WINS: {len(self.white)}')
+                raise GameFinished(black=len(self.black), white=len(self.white), won='WHITE')
         elif len(self.white_moves) == 0 and TURN == WHITE:
             if len(self.black) > len(self.white):
-                raise GameFinished(f'BLACK WINS: {len(self.black)}')
+                raise GameFinished(black=len(self.black), white=len(self.white), won='BLACK')
             else:
-                raise GameFinished(f'WHITE WINS: {len(self.white)}')
+                raise GameFinished(black=len(self.black), white=len(self.white), won='BLACK')
+        # elif len(self.white_moves) == 0 and len(self.black_moves) == 0:
+        #     if len(self.white_moves) == 0 and TURN
 
 
 
@@ -152,9 +179,6 @@ class Othello:
             'sw': lambda x, y: zip(range(x+1, 8, 1), range(y-1, -1, -1)) if x <= 6 and y >= 1 else [(7, 0)]
         }
 
-        for key, val in direct_dict.items():
-            print(f'{key} --- VAL: {[a for a in val(x, y)]}')
-
         # Flips over opposite color nodes between current players nodes after valid move chosen
         def reduce_redundancy(x: int, y: int, black=True):
             if black:
@@ -169,6 +193,12 @@ class Othello:
                 for inx, iny in val(x, y):
                     if self.board[inx][iny] == 0:
                         break
+                    if self.board[inx][iny] == color and not w:
+                        break
+                    if self.board[inx][iny] == opcolor:
+                        flip_bin.append((inx, iny))
+                        w = True
+                        continue
                     if self.board[inx][iny] == color and w:
                         for flipx, flipy in flip_bin:
                             self.board[flipx][flipy] = color
@@ -179,43 +209,37 @@ class Othello:
                                 self.white.add((flipx, flipy))
                                 self.black.remove((flipx, flipy))
                         break
-                    if self.board[inx][iny] == opcolor:
-                        flip_bin.append((inx, iny))
-                        w = True
-                        continue
-                    if self.board[inx][iny] == color and not w:
-                        break
-
-
 
         reduce_redundancy(x, y, black)
 
     def _computer(self):
-        global TURN
         # Random automation of computer's choices
-        for moves in self.white_moves:
-            print(moves)
-        if self.white_moves:
-            x, y = random.choice(self.white_moves)
-            print(f'WHITE CHOOSES (X, Y) - {x} {y}')
-            self.board[x][y] = WHITE
-            self._traverse_flip(x, y, black=False)
-            TURN = BLACK
+        global TURN
+        if TURN == BLACK:
+            color = BLACK
+            c_text = 'BLACK'
+            c_moves = self.black_moves
+            c_pos = self.black
+            color_bool = True
+            opp_col = WHITE
+        else:
+            color = WHITE
+            c_text = 'WHITE'
+            c_moves = self.white_moves
+            c_pos = self.white
+            color_bool = False
+            opp_col = BLACK
+        if c_moves:
+            x, y = random.choice(c_moves)
+            print(f'{c_text} CHOOSES (X, Y) - {x} {y}')
+            self.board[x][y] = color
+            c_pos.add((x, y))
+            self._traverse_flip(x, y, black=color_bool)
+            TURN = opp_col
 
-
+    # Verifies moves, alters choice color, adds position to self, calls method to flip others, checks for win state
     def _updateboard(self, x: int, y: int, black=True) -> None:
         global TURN
-        won = ''
-        output = f'{won} the round! : WHITE: {len(self.white)} -- BLACK: {len(self.black)}'
-        if not len(self.black_moves) or not len(self.white_moves):
-            if len(self.black) > len(self.white):
-                won = 'BLACK'
-                print(output)
-                raise GameFinished
-            else:
-                won = 'WHITE'
-                print(output)
-                raise GameFinished
         if black:
             if (x, y) in self.black_moves:
                 self.board[x][y] = BLACK
@@ -225,75 +249,99 @@ class Othello:
             else:
                 raise AgainstGameRules
         elif not black:
-            if (x, y) in self.black_moves:
-                self.board[x][y] = BLACK
+            if (x, y) in self.white_moves:
+                self.board[x][y] = WHITE
                 self.white.add((x, y))
                 self._traverse_flip(x, y, black=False)
                 TURN = BLACK
 
-
+    # User input and TURN selected or TURN alternator and computer player
     def inputloop(self):
         global TURN
         self._boardprint()
-        while True:
-            if TURN == BLACK:
-                self._movesquery(TURN)
-                try:
-                    black_input = input('Please enter x, y coordinates for black move: ')
-                    if black_input == 'exit':
-                        exit()
-                    else:
-                        black_input = [int(x) for x in black_input.split()]
-                except ValueError:
-                    print('You entered invalid characters, please try again.  No comma necessary to separate integers')
-                    continue
-                if len(black_input) != 2:
-                    print("Please enter just 2 values, one for X and one for Y separated by a space, nothing else")
-                    continue
-                elif black_input[0] < 0 or black_input[0] > 7 or black_input[1] < 0 or black_input[1] > 7:
-                    print("Please enter in values between 0 and 7")
-                    continue
-                else:
-                    try:
-                        self._updateboard(black_input[0], black_input[1])
-                    except AgainstGameRules:
-                        continue
-            self._boardprint()
-
-            if TURN == WHITE:
-                if not self.computer:
-                    self._movesquery(TURN)
-                    try:
-                        white_input = [int(x) for x in input("WHITE TURN: Please enter X Y coordinates between 0 and 7").split()]
-                    except ValueError:
-                        print("Please only enter integers, no other characters allowed")
-                        continue
-                    if len(white_input) != 2:
-                        print("Please enter just 2 values, one for X and one for Y separated by a space, nothing else")
-                        continue
-                    elif white_input[0] < 0 or white_input[0] > 7 or white_input[1] < 0 or white_input[1] > 7:
-                        print("Please enter in values between 0 and 7")
-                        continue
+        try:
+            while True:
+                if TURN == BLACK:
+                    if not self.computer_b:
+                        self._movesquery(TURN)
+                        try:
+                            black_input = input('Please enter x, y coordinates for black move: ')
+                            if black_input == 'exit':
+                                exit()
+                            else:
+                                black_input = [int(x) for x in black_input.split()]
+                        except ValueError:
+                            print('You entered invalid characters, please try again.  No comma necessary to separate integers')
+                            continue
+                        if len(black_input) != 2:
+                            print("Please enter just 2 values, one for X and one for Y separated by a space, nothing else")
+                            continue
+                        elif black_input[0] < 0 or black_input[0] > 7 or black_input[1] < 0 or black_input[1] > 7:
+                            print("Please enter in values between 0 and 7")
+                            continue
+                        else:
+                            self._updateboard(black_input[0], black_input[1])
                     else:
                         try:
-                            self._updateboard(white_input[0], white_input[1], black=False)
-                        except AgainstGameRules:
+                            self._movesquery(TURN)
+                            self._computer()
+                        except AgainstGameRules():
                             continue
-                else:
-                    try:
-                        self._movesquery(TURN)
-                        self._computer()
-                    except GameFinished:
-                        pass
-
                 self._boardprint()
 
+                if TURN == WHITE:
+                    if not self.computer_w:
+                        self._movesquery(TURN)
+                        try:
+                            white_input = [int(x) for x in input("WHITE TURN: Please enter X Y coordinates between 0 and 7").split()]
+                        except ValueError:
+                            print("Please only enter integers, no other characters allowed")
+                            continue
+                        if len(white_input) != 2:
+                            print("Please enter just 2 values, one for X and one for Y separated by a space, nothing else")
+                            continue
+                        elif white_input[0] < 0 or white_input[0] > 7 or white_input[1] < 0 or white_input[1] > 7:
+                            print("Please enter in values between 0 and 7")
+                            continue
+                        else:
+                            try:
+                                self._updateboard(white_input[0], white_input[1], black=False)
+                            except AgainstGameRules:
+                                continue
+                    else:
+                        self._movesquery(TURN)
+                        self._computer()
+                    self._boardprint()
+        except GameFinished as gf:
+            for msg in gf.msgs:
+                print(msg)
+            exit()
+
     def maingame(self):
+        while True:
+            game_set = input("Please choose how many computers will be playing between 0, 1 and 2")
+            if not game_set.isnumeric():
+                print("Incorrect value's entered")
+            else:
+                gsi = game_set
+                if gsi == '0':
+                    break
+                if gsi == '1':
+                    self.computer_w = True
+                    break
+                if gsi == '2':
+                    self.computer_w = True
+                    self.computer_b = True
+                    break
+                else:
+                    print("Incorrect value's entered")
+                    continue
+
         try:
             while True:
                 self.inputloop()
         except GameFinished:
-            pass
+            exit()
 
 
 
