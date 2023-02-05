@@ -120,6 +120,18 @@ class Othello:
             'nw': lambda x, y: (x - 2, y - 2),
             'sw': lambda x, y: (x + 2, y - 2)
         }
+
+        direct_dict = {
+            'n': lambda x, y: itertools.zip_longest(range(x - 1, -1, -1), '', fillvalue=y) if x >= 1 else [(0, y)],
+            's': lambda x, y: itertools.zip_longest(range(x + 1, 8, 1), '', fillvalue=y) if x <= 6 else [(7, y)],
+            'e': lambda x, y: itertools.zip_longest('', range(y + 1, 8, 1), fillvalue=x) if y <= 6 else [(x, 7)],
+            'w': lambda x, y: itertools.zip_longest('', range(y - 1, -1, -1), fillvalue=x) if y >= 1 else [(x, 0)],
+            'ne': lambda x, y: zip(range(x - 1, -1, -1), range(y + 1, 8, 1)) if x >= 1 and y <= 6 else [(0, 7)],
+            'se': lambda x, y: zip(range(x + 1, 8, 1), range(y + 1, 8, 1)) if x <= 6 and y <= 6 else [(7, 7)],
+            'nw': lambda x, y: zip(range(x - 1, -1, -1), range(y - 1, -1, -1)) if x >= 1 and y >= 1 else [(0, 0)],
+            'sw': lambda x, y: zip(range(x + 1, 8, 1), range(y - 1, -1, -1)) if x <= 6 and y >= 1 else [(7, 0)]
+        }
+
         b_ops = []
         w_ops = []
         for x, y in self.black:
@@ -128,8 +140,13 @@ class Othello:
                     b_ops.append(key)
                 if b_ops:
                     item = b_ops.pop(0)
-                    if p_movecheck[item](x, y, EMPTY):
-                        self.black_moves.append(moves[item](x, y))
+                    for a, b in direct_dict[item](x, y):
+                        if self.board[a][b] == EMPTY:
+                            self.black_moves.append((a, b))
+                            break
+                        if self.board[a][b] == BLACK:
+                            break
+
 
         for x, y in self.white:
             for key, val in p_opposite.items():
@@ -137,8 +154,15 @@ class Othello:
                     w_ops.append(key)
                 if w_ops:
                     item = w_ops.pop(0)
-                    if p_movecheck[item](x, y, EMPTY):
-                        self.white_moves.append(moves[item](x, y))
+                    for a, b in direct_dict[item](x, y):
+                        if self.board[a][b] == EMPTY:
+                            self.white_moves.append((a, b))
+                            break
+                        if self.board[a][b] == BLACK:
+                            continue
+                        if self.board[a][b] == WHITE:
+                            break
+
 
         # This is where end-game conditions are checked
         if len(self.black_moves) == 0 and TURN == BLACK:
@@ -274,11 +298,8 @@ class Othello:
                         else:
                             self._updateboard(black_input[0], black_input[1])
                     else:
-                        try:
-                            self._movesquery(TURN)
-                            self._computer()
-                        except AgainstGameRules():
-                            continue
+                        self._movesquery(TURN)
+                        self._computer()
                 self._boardprint()
 
                 if TURN == WHITE:
@@ -296,10 +317,7 @@ class Othello:
                             print("Please enter in values between 0 and 7")
                             continue
                         else:
-                            try:
-                                self._updateboard(white_input[0], white_input[1], black=False)
-                            except AgainstGameRules:
-                                continue
+                            self._updateboard(white_input[0], white_input[1], black=False)
                     else:
                         self._movesquery(TURN)
                         self._computer()
