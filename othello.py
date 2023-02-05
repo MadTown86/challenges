@@ -3,20 +3,24 @@ import itertools
 import numpy
 import random
 """
-board  8x8 array
+First implementation of game Othello.
+Can be played with 0-2 human players.
 
-designate b, w to coordinates that have those 'discs', create methods to update based on user input, most likely
-as coordinates.
+Where it can be refactored for my future self.  
 
-attempt to use a try/except model to 'listen' for a 'game is finished' exception to stop loop for user input
-
-https://asciinema.org/a/CtCXajLMGWqEEF4o7pdWpByBU
-
+Explanation of why I started doing it this way:
+1. Without altering the entire structure, it can be simplified in the following ways:
+    a) Instead of using black=True or False to designate the current color and then also using a global TURN
+        -Make it one or the other, most likely the global variable as it would be more explicit
+    b) Combining the methods used to calculate the 'bins' and also traversing to flip the colors.
+2. I believe all of the lambda's create a lot of overhead.  Coming from a manufacturing background and using cartesian
+coordinate system.  It is a mental leap to process
 """
+
 
 BLACK = 2
 WHITE = 3
-EMPTY = 0
+EMPTY = 0  # BLUE
 TURN = BLACK
 
 
@@ -31,20 +35,21 @@ class GameFinished(Exception):
             f'WHITE PIECES: {white}',
             f'WON: {won}'
         ]
-    def __call__(self):
-        for msg in self.msgs:
-            print(msg)
 
 class AgainstGameRules(Exception):
     def __init__(self):
         self.msg = "You entered invalid coordinates, either a piece was there already or you didn't adhere to the game rules"
 
-    def __call__(self):
-        return self.msg
-
 class Othello:
 
     def __init__(self):
+        """
+        Class Constructor:
+        This sets the 8x8 board as a nested array using numpy.array.
+
+        The board starts with 2 black and 2 white pieces in alternating sequence at the
+        center 4 squares (3, 3) - (4, 4)
+        """
         self.board = numpy.array(8*[8*[0]])
         self.board[3][3] = 3
         self.board[3][4] = 2
@@ -58,8 +63,11 @@ class Othello:
         self.computer_w = False
         self.won = None
 
-    # Prints the current board layout
     def _boardprint(self):
+        """
+        This method prints the current board layout to stdout using black, white and blue emojis.
+        :return:
+        """
         for row in self.board:
             q_print = []
             for place in row:
@@ -71,12 +79,15 @@ class Othello:
                 else:
                     q_print.append("\U000026AA")
             print(q_print)
-
-    #Checks all current positions in self.white/black_moves for possible moves and bins them
     def _movesquery(self, TURN):
+        """
+        Method calculates all potential moves for black and white pieces, becoming bins to verify user input
+        or choices for computer players
+        :param TURN: this is the current active turn whether BLACK or WHITE
+        :return: None
+        """
         self.black_moves = []
         self.white_moves = []
-        # Check adjacent positions from self for existence of opposite color discs
         p_opposite = {
             'n': lambda x, y, d: self.board[x - 1][y] == d if x >= 1 else False,
             's': lambda x, y, d: self.board[x + 1][y] == d if x <= 6 else False,
@@ -97,22 +108,6 @@ class Othello:
             'ne': lambda x, y, d: self.board[x - 2][y + 2] == d if x >= 2 and y <= 5 else False,
             'sw': lambda x, y, d: self.board[x + 2][y - 2] == d if x <= 5 and y >= 2 else False,
             'se': lambda x, y, d: self.board[x + 2][y + 2] == d if x <= 5 and y <= 5 else False,
-        }
-        # def moves(r, c, R, C):
-        #     offsets = [(i, j) for i in range(-1, 2) for j in range(-1, 2) if not i == j == 0]
-        #     return [(r + i, c + j) for i, j in offsets if 0 <= r + i < R and 0 <= c + j < C]
-        # print(moves(0, 0, 10, 10))
-        # print(moves(5, 5, 6, 7))
-
-        neighbors = {
-            'n': lambda x, y: (x - 1, y),
-            's': lambda x, y: (x + 1, y),
-            'e': lambda x, y: (x, y + 1),
-            'w': lambda x, y: (x, y - 1),
-            'ne': lambda x, y: (x - 1, y + 1),
-            'se': lambda x, y: (x + 1, y + 1),
-            'nw': lambda x, y: (x - 1, y - 1),
-            'sw': lambda x, y: (x + 1, y - 1)
         }
 
         moves = {
@@ -135,9 +130,6 @@ class Othello:
                     item = b_ops.pop(0)
                     if p_movecheck[item](x, y, EMPTY):
                         self.black_moves.append(moves[item](x, y))
-            # for item in b_ops:
-            #     if item in b_movs:
-            #         self.black_moves.append(moves[item](x, y))
 
         for x, y in self.white:
             for key, val in p_opposite.items():
@@ -148,9 +140,7 @@ class Othello:
                     if p_movecheck[item](x, y, EMPTY):
                         self.white_moves.append(moves[item](x, y))
 
-        print(f'BLACK MOVES BIN: {len(self.black_moves)}')
-        print(f'WHITE MOVES BIN: {len(self.white_moves)}')
-
+        # This is where end-game conditions are checked
         if len(self.black_moves) == 0 and TURN == BLACK:
             if len(self.black) > len(self.white):
                 raise GameFinished(black=len(self.black), white=len(self.white), won='BLACK')
@@ -161,13 +151,15 @@ class Othello:
                 raise GameFinished(black=len(self.black), white=len(self.white), won='BLACK')
             else:
                 raise GameFinished(black=len(self.black), white=len(self.white), won='BLACK')
-        # elif len(self.white_moves) == 0 and len(self.black_moves) == 0:
-        #     if len(self.white_moves) == 0 and TURN
-
-
 
     def _traverse_flip(self, x: int, y: int, black=True) -> None:
-        # Traverses all directions from given point and flips any that fit the rule
+        """
+        This method takes the current active position (x, y) and
+        :param x:
+        :param y:
+        :param black:
+        :return:
+        """
         direct_dict = {
             'n': lambda x, y: itertools.zip_longest(range(x-1, -1, -1), '', fillvalue=y) if x >= 1 else [(0, y)],
             's': lambda x, y: itertools.zip_longest(range(x+1, 8, 1), '', fillvalue=y) if x <= 6 else [(7, y)],
@@ -231,7 +223,7 @@ class Othello:
             opp_col = BLACK
         if c_moves:
             x, y = random.choice(c_moves)
-            print(f'{c_text} CHOOSES (X, Y) - {x} {y}')
+            print(f'{c_text} CHOOSES (X, Y) - {x}, {y}')
             self.board[x][y] = color
             c_pos.add((x, y))
             self._traverse_flip(x, y, black=color_bool)
