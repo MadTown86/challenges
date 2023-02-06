@@ -147,7 +147,6 @@ class Othello:
                         if self.board[a][b] == BLACK:
                             break
 
-
         for x, y in self.white:
             for key, val in p_opposite.items():
                 if val(x, y, BLACK):
