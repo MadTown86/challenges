@@ -215,14 +215,15 @@ class Othello:
                         w = True
                         continue
                     if self.board[inx][iny] == color and w:
-                        for flipx, flipy in flip_bin:
-                            self.board[flipx][flipy] = color
-                            if color == BLACK:
-                                self.black.add((flipx, flipy))
-                                self.white.remove((flipx, flipy))
-                            else:
-                                self.white.add((flipx, flipy))
-                                self.black.remove((flipx, flipy))
+                        if flip_bin:
+                            for flipx, flipy in flip_bin:
+                                self.board[flipx][flipy] = color
+                                if color == BLACK:
+                                    self.black.add((flipx, flipy))
+                                    self.white.remove((flipx, flipy))
+                                else:
+                                    self.white.add((flipx, flipy))
+                                    self.black.remove((flipx, flipy))
                         break
 
         reduce_redundancy(x, y, black)
