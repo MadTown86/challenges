@@ -29,7 +29,51 @@ def main(light_x, light_y, initial_tx, initial_ty):
         'SE': (1, 1),
         'SW': (-1, 1)
     }
-
+    count = 0
     # game loop
     while count <= 100:
         # remaining_turns = int(input())  # The remaining amount of turns Thor can move. Do not remove this line.
+
+        if light_x == initial_tx and light_y == initial_ty:
+            print(f'YOU MADE IT IN : {count} moves')
+            break
+        elif light_x == initial_tx and light_y != initial_ty:
+            if initial_ty > light_y:
+                print('N')
+                initial_ty -= 1
+                count += 1
+                continue
+            else:
+                print('S')
+                initial_ty += 1
+                count += 1
+                continue
+        elif light_x != initial_tx and light_y == initial_ty:
+            if initial_tx > light_x:
+                print('W')
+                initial_tx -= 1
+                count += 1
+                continue
+            else:
+                print('E')
+                initial_tx += 1
+                count += 1
+                continue
+        else:
+            hypo_bin = []
+            for key, item in moves.items():
+                hypo_bin.append((side_c(initial_tx + item[0], initial_ty + item[1]), key, ))
+
+            for res in hypo_bin:
+                print(res)
+
+            print(min(hypo_bin)[1])
+
+            xmov, ymov = moves[min(hypo_bin)[1]]
+            initial_tx += xmov
+            initial_ty += ymov
+
+            count += 1
+
+if __name__ == "__main__":
+    main(31, 4, 5, 4)
