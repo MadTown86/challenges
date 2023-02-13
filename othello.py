@@ -1,20 +1,13 @@
-# Othello, 2:30 start
 import itertools
 import numpy
 import random
+
 """
 First implementation of game Othello.
 Can be played with 0-2 human players.
 
 Where it can be refactored for my future self.  
 
-Explanation of why I started doing it this way:
-1. Without altering the entire structure, it can be simplified in the following ways:
-    a) Instead of using black=True or False to designate the current color and then also using a global TURN
-        -Make it one or the other, most likely the global variable as it would be more explicit
-    b) Combining the methods used to calculate the 'bins' and also traversing to flip the colors.
-2. I believe all of the lambda's create a lot of overhead.  Coming from a manufacturing background and using cartesian
-coordinate system.  It is a mental leap to process
 """
 
 
@@ -26,6 +19,13 @@ TURN = BLACK
 
 class GameFinished(Exception):
     def __init__(self, black: int, white: int, won: 'str') -> None:
+        """
+        This exception is used to catch a game won state and print the game finished message below
+
+        :param black: # of black pieces on board
+        :param white: # of white pieces on board
+        :param won: 'BLACK' or 'WHITE'
+        """
         super().__init__()
         self.black = black
         self.white = white
@@ -37,6 +37,10 @@ class GameFinished(Exception):
         ]
 
 class AgainstGameRules(Exception):
+    """
+    This exception was meant to catch moves chosen by a player that would be against the games rules.  However,
+    I believe with my input validation, I can remove this exception as being unnecessary
+    """
     def __init__(self):
         self.msg = "You entered invalid coordinates, either a piece was there already or you didn't adhere to the game rules"
 
@@ -177,10 +181,11 @@ class Othello:
 
     def _traverse_flip(self, x: int, y: int, black=True) -> None:
         """
-        This method takes the current active position (x, y) and
-        :param x:
-        :param y:
-        :param black:
+        This method takes the current active position (x, y) and checks along all possible axis for pieces
+        of the opposite color to flip over.
+        :param x: current x
+        :param y: current y
+        :param black: flips white over if true, flips black over if false
         :return:
         """
         direct_dict = {
@@ -229,6 +234,10 @@ class Othello:
         reduce_redundancy(x, y, black)
 
     def _computer(self):
+        """
+        This method automates the computers random choice of moves if activated  upon initial creation.
+        :return: None
+        """
         # Random automation of computer's choices
         global TURN
         if TURN == BLACK:

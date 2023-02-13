@@ -1,136 +1,65 @@
-from __future__ import annotations
-from typing import Self
-
 import numpy
 
-
-class PathNode:
-    __slots__ = '_pos', '_nextl', '_prev'
-
-    def __init__(self, pos: (int, int) = None, nextl: Self = Self, prev: Self = Self) -> None:
-        self._pos = pos
-        self._nextl = nextl
-        self._prev = prev
-
-
+from positional_linked_list import PositionalList
 
 class CastleQueenSide:
-    class PathNode:
-        __slots__ = '_pos', '_nextl', '_prev'
+    def __init__(self, pos: tuple[int, int] = (7, 3)) -> None:
+        """
+        This constructor builds the chess board using numpy arrays, default filled with 0's.
+        It also instantiates the following class attributes
 
-        def __init__(self, pos: (int, int) = None, nextl: Self = None, prev: Self = None) -> None:
-            self._pos = pos
-            self._nextl = nextl
-            self._prev = prev
-    class Path:
-        def __init__(self):
-            self._sent_head = PathNode()
-            self._sent_tail = PathNode(prev=self._sent_head)
-            self._sent_head._nextl = self._sent_tail
-            self._size = 0
+        Class Attributes:
+        self.board - numpy.array
+        self.marked - set() : storing locations that have been traversed
+        self.avail_moves - set(): a list of moves available from current position
+        self.current_pos - tuple[int, int]: this is default (7, 3) unless given alternate input by user
 
-        class Position:
-            def __init__(self, container, node):
-                self._container = container
-                self._node = node
+        *self.bad_paths - dictionary {}: This merits additional information:
+        1. This is going to store bad paths in the form of doubly linked lists for now, but this format may need to
+        change.
+            The path itself:
+            1a. Each node will contain the position element, self.board snapshot and # of moves available
+            2a. The board-snapshot will be a current copy of the board layout, this is to check that all
+            circumstances that lead to a 'no moves left' exception are recorded
+            3a. My hope is that by doing this, I will be able to 'record' a series of points and self.board
+            snapshots that resulted in a no moves left situation and provide a check so that doing the same series of
+            moves can be avoided and removed from the availalbe list of moves at each turn.
+            The item recorded in 'bad_paths':
+            4a. So in theory if there were two moves that only had one move available and then the final move with zero
+            additional moves available, the initial node on this chain that had only one move would be recorded and
+            a check will be made to ensure the same point isn't chosen when the same self.board is present.
+                *This may be a fruitless endeaver, as there are so many paths that can be taken, it might be a moot
+                point and just cost extra overhead in time/memory.
+        2. Example:
+            A. self.bad_paths[(7, 2)] = [self.board, ]
 
-            def element(self):
-                return self._node._pos
+        :param pos:
+        """
+        self.board = numpy.array(8*[8*[0]])
+        self.marked = set()
+        self.avail_moves = set()
+        self.bad_paths = {}
+        self.current_pos = pos
+        self.board[7][3] = 1
 
-            def __eq__(self, other):
-                return type(other) is type(self) and other._node is self._node
+    def _check_moves(self) -> None:
+        """
+        This method checks the available moves for the knight and adds them to the class attribute self.avail_moves
+        :return: None
+        """
+        x, y = self.current_pos
+        moves = [(-2, -1), (-2, 1), (2, -1), (2, 1), (-1, 2), (1, 2), (-1, -2), (1, -2)]
 
-            def __ne__(self, other):
-                return not (self == other)
+        for xm, ym in moves:
+            new_x = x + xm
+            new_y = y + ym
+            if new_x < 0 > new_y or new_x > 7 < new_y:
+                continue
+            elif (new_x, new_y) in self.bad_paths.keys:
 
-        def _validate(self, p):
-            if not isinstance(p, self.Position):
-                raise TypeError("p must e proper Position type")
-            if p._container is not self:
-                raise ValueError("p does not belong to this container")
-            if p._node._nextl is None:
-                raise ValueError("pis no longer valid")
-            return p._node
 
-        def _make_position(self, node):  # Encapsulates the last used node
-            if node is self._sent_head or node is self._sent_tail:
-                return None
-            else:
-                return self.Position(self, node)
 
-        def __len__(self):
-            return self._size
-
-        def is_empty(self):
-            return self._size == 0
-
-        def _insert_between(self, e, predecessor, successor):
-            newest = PathNode(e, predecessor, successor)
-            predecessor._nextl = newest
-            successor._prev = newest
-            self._size += 1
-            return newest
-
-        def _delete_node(self, node):
-            predecessor = node._prev
-            successor = node._nextl
-            predecessor._nextl = successor
-            successor._prev = predecessor
-            self._size -= 1
-            element = node._pos
-            node._prev = node._nextl = node._pos = None
-            return element
-        def first(self):
-            return self._make_position(self._sent_head._nextl)
-
-        def last(self):
-            return self._make_position(self._sent_tail._prev)
-
-        def before(self, p):
-            node = self._validate(p)
-            return self._make_position(node._prev)
-
-        def after(self, p):
-            node = self._validate(p)
-            return self._make_position(node._nextl)
-
-        def __iter__(self):
-            cursor = self.first()
-            while cursor is not None:
-                yield cursor.element()
-                cursor = self.after(cursor)
-
-        def add_first(self, e):
-            return self._insert_between(e, self._sent_head, self._sent_head._nextl)
-
-        def add_last(self, e):
-            return self._insert_between(e, self._sent_tail._prev, self._sent_tail)
-
-        def add_before(self, p, e):
-            original = self._validate(p)
-            return self._insert_between(e, original._prev, original)
-
-        def add_after(self, p, e):
-            original = self._validate(
-                p
-            )  # validate shells the encapsulation of Position and allows direct reference
-            return self._insert_between(e, original, original._nextl)
-
-        def delete(self, p):
-            original = self._validate(p)
-            return self._delete_node(original)
-
-        def replace(self, p, e):
-            original = self._validate(p)
-            old_value = original._element
-            original._element = e
-            return old_value
-
-    def __init__(self):
-        self.board = numpy.array(8 * [8 * [0]])
-        self.moves_bin = []
-        self.false_moves = {}  # This is going to be tuples of (from [x, y] to [x, y], may
-
+    def _self_print(self):
 
 
 
