@@ -1,3 +1,5 @@
+from random import choice
+
 import numpy
 from typing import Self
 
@@ -101,8 +103,10 @@ class CastleQueenSide:
         self.board[7][3] = 1
         self.marked = set()
         self.avail_moves = set()
+        self.block_paths = set()
         self.bad_paths = {}
         self.current_pos = pos
+        self.win = True if len(self.avail_moves) == 0 and len(self.marked) == 64 else False
 
         self.path = Path()
 
@@ -124,6 +128,8 @@ class CastleQueenSide:
 
 
     def _check_moves(self) -> None:
+        del self.avail_moves
+        self.avail_moves = set()
         """
         This method checks the available moves for the knight and adds them to the class attribute self.avail_moves
 
@@ -149,14 +155,18 @@ class CastleQueenSide:
                 if (new_x, new_y) not in self.marked:
                     self.avail_moves.add(check_pos)
                     continue
-        if self.avail_moves:
-            return
+
     def start(self):
-        self._check_moves()
-        if not self.avail_moves:
-            """
-            E
-            """
+        if not self.win:
+            self._check_moves()
+            if not self.avail_moves:
+                """
+                Create - backtracking algorithm
+                """
+            else:
+
+                cx, xy = choice(*self.avail_moves)
+
 
 
 if __name__ == "__main__":
