@@ -9,12 +9,15 @@ class Node:
     """
     Basic doubly linked list node
     """
-    __slots__ = '_pos', '_prev', '_nextn', '_moves'
-    def __init__(self, pos: tuple[int, int] = None, prev: Self = None, nextn: Self = None, _moves: int = None):
+    __slots__ = '_pos', '_prev', '_nextn', '_moves', '_block_moves', '_moves_bin'
+    def __init__(self, pos: tuple[int, int] = None, prev: Self = None, nextn: Self = None,
+                 _moves: int = None, _block_moves: set[tuple, tuple] = set(), _moves_bin: set[tuple, tuple] = set()):
         self._pos = pos
         self._prev = prev
         self._nextn = nextn
         self._moves = _moves
+        self._moves_bin = _moves_bin
+        self._block_moves = _block_moves
 
 class Path:
     """
@@ -37,7 +40,7 @@ class Path:
         """
 
         new_node = Node(pos = pos, prev=self._current, nextn=self._current._nextn, _moves=moves)
-        self.current._nextn = new_node
+        self._current._nextn = new_node
         self._current = new_node
         return self._current
 
@@ -50,7 +53,7 @@ class Path:
         :param pos:
         :return:
         """
-        self._current._prev._next = self._current._nextn
+        self._current._prev._nextn = self._current._nextn
         self._current._nextn._prev = self._current._prev
         self._current = self._current._prev
         return self._current
@@ -117,10 +120,15 @@ class CastleQueenSide:
         This method prints the current board layout to stdout using black, white and blue emojis.
         :return:
         """
-        for x, y in self.avail_moves:
+        for x, y in self.path._current._moves_bin:
             self.board[x][y] = 2
         for x, y in self.marked:
             self.board[x][y] = 1
+        if self.path._current._block_moves:
+            for x, y in self.path._current._block_moves:
+                self.board[x][y] = 4
+        x, y = self.current_pos
+        self.board[x][y] = 3
         for row in self.board:
             q_print = []
             for place in row:
@@ -131,14 +139,14 @@ class CastleQueenSide:
                     q_print.append("\U000026AB")
                 elif place == 2:
                     q_print.append("\U000026AA")
+                elif place == 3:
+                    q_print.append("\U0001F534")
+                elif place == 4:
+                    q_print.append("\U0001F7E2")
+
             print(q_print)
 
         print('\n')
-
-        for x, y in self.avail_moves:
-            self.board[x][y] = 0
-        for x, y in self.marked:
-            self.board[x][y] = 0
     def _bad_pathcheck(self, arg: tuple[Any, Any]) -> bool:
         """
         Create a check that takes the x, y positional input and checks the current board layout against any
@@ -148,12 +156,10 @@ class CastleQueenSide:
         before I tackle the localized self.board check.
         :return:
         """
-        if arg in self.bad_paths.keys():
-            bad_board = self.bad_paths[arg]
-            if self.board == bad_board:
-                return True
-            else:
-                return False
+        if arg in self.path._current._block_moves:
+            return False
+        else:
+            return True
 
 
     def _check_moves(self) -> None:
@@ -172,44 +178,46 @@ class CastleQueenSide:
             check_pos = (new_x, new_y)
             if new_x < 0 or new_x > 7 or new_y < 0 or new_y > 7:
                 continue
-            elif (new_x, new_y) in self.bad_paths.keys():
-                if self._bad_pathcheck((new_x, new_y)):
-                    continue
-                else:
-                    if (new_x, new_y) not in self.marked:
-                        self.avail_moves.add(check_pos)
-                        continue
-            else:
-                if (new_x, new_y) not in self.marked:
-                    self.avail_moves.add(check_pos)
-                    continue
+            self.path._current._moves_bin.add((new_x, new_y))
+        self._boardprint()
+
     def _backup_move(self):
         old_pos = self.current_pos
         old_x, old_y = self.current_pos[0], self.current_pos[1]
         self.board[old_x][old_y] = 0
         self.bad_paths[old_pos] = self.board
         new_curr = self.path._remove_element(self.path._current._pos)
-        self.marked.remove(self.current_pos)
+        self.marked.remove(old_pos)
         self.current_pos = new_curr._pos
+        new_curr._block_moves.add(old_pos)
+        return old_pos
 
     def start(self):
 
         count = 0
         while count < 100:
-            self.path._path_print()
-            self._boardprint()
+            # self.path._path_print()
         # while not self.win:
             self._check_moves()
-            if not self.avail_moves:
+            self._boardprint()
+            """
+            I have to use the node itself to store the 'bad paths' data for decision making.  Its only at each
+            snapshot of the board/position do the decisions matter.  After that node is removed, then the 'bad' paths
+            should no longer exist on the board because the state of the game is altered.
+            """
+            if not self.path._current._moves_bin:
                 self._backup_move()
+                old = None
                 while self.path._current._moves == 1:
-                    self._backup_move()
+                    old = self._backup_move()
+                if self.path._current._moves >= 2 and old:
+                    self.path._current._block_moves.add(old)
                 count += 1
             else:
-                t_choice = random.choice([x for x in self.avail_moves])
+                t_choice = random.choice([x for x in self.path._current._moves_bin])
                 cx = t_choice[0]
                 xy = t_choice[1]
-                self.path._add_element(pos=(cx, xy), moves=len(self.avail_moves))
+                self.path._add_element(pos=(cx, xy), moves=len(self.path._current._moves_bin))
                 self.marked.add((cx, xy))
                 self.current_pos = (cx, xy)
                 self.board[cx][xy] = 1
