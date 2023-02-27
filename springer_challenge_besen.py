@@ -93,34 +93,7 @@ class Path:
 class CastleQueenSide:
     def __init__(self, pos: tuple[int, int] = None) -> None:
         """
-        This constructor builds the chess board using numpy arrays, default filled with 0's.
-        It also instantiates the following class attributes
 
-        Class Attributes:
-        self.board - numpy.array
-        self.marked - set() : storing locations that have been traversed
-        self.avail_moves - set(): a list of moves available from current position
-        self.current_pos - tuple[int, int]: this is default (7, 3) unless given alternate input by user
-
-        *self.bad_paths - dictionary {}: This merits additional information:
-        1. This is going to store bad paths in the form of doubly linked lists for now, but this format may need to
-        change.
-            The path itself:
-            1a. Each node will contain the position element, self.board snapshot and # of moves available
-            2a. The board-snapshot will be a current copy of the board layout, this is to check that all
-            circumstances that lead to a 'no moves left' exception are recorded
-            3a. My hope is that by doing this, I will be able to 'record' a series of points and self.board
-            snapshots that resulted in a no moves left situation and provide a check so that doing the same series of
-            moves can be avoided and removed from the available list of moves at each turn.  The difficulty in this, is
-            that I may have to localize the layout for this check.
-            The item recorded in 'bad_paths':
-            4a. So in theory if there were two moves that only had one move available and then the final move with zero
-            additional moves available, the initial node on this chain that had only one move would be recorded and
-            a check will be made to ensure the same point isn't chosen when the same self.board is present.
-                *This may be a fruitless endeaver, as there are so many paths that can be taken, it might be a moot
-                point and just cost extra overhead in time/memory.
-        2. Example:
-            A. self.bad_paths[(7, 2)] = [self.board]
 
         :param pos:
         """
@@ -212,38 +185,39 @@ class CastleQueenSide:
 
     def start(self):
         count = 0
-        while count < 200:
+        while not self.win:
             # self.path._path_print()
             self._check_moves()
-            self._boardprint()
+            # self._boardprint()
             """
             I have to use the node itself to store the 'bad paths' data for decision making.  Its only at each
             snapshot of the board/position do the decisions matter.  After that node is removed, then the 'bad' paths
             should no longer exist on the board because the state of the game is altered.
             """
             if not self.path._current._moves_bin:
-                print("***************** DEAD END *******************")
+                # print("***************** DEAD END *******************")
                 self._backup_move()
-                print(f'BOARD AFTER BACKUP: {count}')
-                self._boardprint()
+                # print(f'BOARD AFTER BACKUP: {count}')
+                # self._boardprint()
                 count += 1
             else:
-                print(f'MAKING A MOVE')
+                # print(f'MAKING A MOVE')
                 t_choice = random.choice([x for x in self.path._current._moves_bin])
                 cx = t_choice[0]
                 xy = t_choice[1]
+                self.path._current._chosen.add((cx, xy))
                 self.path._add_element(
                     pos=(cx, xy), moves=len(self.path._current._moves_bin)
                 )
                 self.marked.add((cx, xy))
                 self.current_pos = (cx, xy)
-                self.path._current._chosen.add(self.current_pos)
                 self.board[cx][xy] = 1
-                print(f'BOARD AFTER RANDOM MOVE: {count}')
-                self._boardprint()
+                # print(f'BOARD AFTER RANDOM MOVE: {count}')
+                # self._boardprint()
                 count += 1
+        return count
 
 
 if __name__ == "__main__":
     C = CastleQueenSide()
-    C.start()
+    print(C.start())
