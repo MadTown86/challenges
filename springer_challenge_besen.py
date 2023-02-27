@@ -4,25 +4,38 @@ import numpy
 from typing import Self
 from typing import Any
 
+OPEN = 0
+MARKED = 1
+MOVES = 2
+CURRENT = 3
 
 class Node:
     """
     Basic doubly linked list node
     """
-    __slots__ = '_pos', '_prev', '_nextn', '_moves', '_block_moves', '_moves_bin'
-    def __init__(self, pos: tuple[int, int] = None, prev: Self = None, nextn: Self = None,
-                 _moves: int = None, _block_moves: set[tuple, tuple] = set(), _moves_bin: set[tuple, tuple] = set()):
+
+    __slots__ = "_pos", "_prev", "_nextn", "_block_moves", "_moves_bin"
+
+    def __init__(
+        self,
+        pos: tuple[int, int] = None,
+        prev: Self = None,
+        nextn: Self = None,
+        _block_moves: {} = {},
+        _moves_bin: set[tuple, tuple] = set(),
+    ):
         self._pos = pos
         self._prev = prev
         self._nextn = nextn
-        self._moves = _moves
         self._moves_bin = _moves_bin
         self._block_moves = _block_moves
+
 
 class Path:
     """
     A flavor of doubly linked list abstraction
     """
+
     def __init__(self, current: Node = None) -> None:
         self._head = Node()
         self._tail = Node()
@@ -39,12 +52,14 @@ class Path:
         :return:
         """
 
-        new_node = Node(pos = pos, prev=self._current, nextn=self._current._nextn, _moves=moves)
+        new_node = Node(pos=pos, prev=self._current, nextn=self._current._nextn)
+        old_tail = self._current._nextn
         self._current._nextn = new_node
         self._current = new_node
+        self._current._nextn = old_tail
         return self._current
 
-    def _remove_element(self, pos: tuple[int, int]) -> Node:
+    def _remove_element(self) -> Node:
         """
         The only remove requirement would be to backtrack from a 'no moves left' situation
 
@@ -56,6 +71,8 @@ class Path:
         self._current._prev._nextn = self._current._nextn
         self._current._nextn._prev = self._current._prev
         self._current = self._current._prev
+        while self._current._moves_bin:
+            self._current._moves_bin.pop()
         return self._current
 
     def _path_print(self):
@@ -105,34 +122,43 @@ class CastleQueenSide:
 
         :param pos:
         """
-        self.board = numpy.array(8*[8*[0]])
+        self.board = numpy.array(8 * [8 * [OPEN]])
         self.avail_moves = set()
         self.block_paths = set()
         self.bad_paths = {}
         self.current_pos = (7, 1)
         self.marked = set()
         self.marked.add((7, 1))
-        self.win = True if len(self.avail_moves) == 0 and len(self.marked) == 64 else False
-        self.path = Path(Node(pos=pos, _moves=3))
+        self.win = (
+            True if len(self.avail_moves) == 0 and len(self.marked) == 64 else False
+        )
+        self.path = Path(Node(pos=pos))
 
+    def _update_blockmoves(self, pos: tuple[int, int], boardimage):
+        if pos in self.path._current._block_moves.keys():
+            old = self.path._current._block_moves[pos]
+            old.append(boardimage)
+        else:
+            self.path._current._block_moves[pos] = [boardimage]
+    def _updateboard(self):
+        for x in range(len(self.board)):
+            for y in range(len(self.board[x])):
+                self.board[x][y] = OPEN
+        for x, y in self.marked:
+            self.board[x][y] = MARKED
+        for x, y in self.path._current._moves_bin:
+            self.board[x][y] = MOVES
+        x, y = self.current_pos
+        self.board[x][y] = CURRENT
     def _boardprint(self):
         """
         This method prints the current board layout to stdout using black, white and blue emojis.
         :return:
         """
-        for x, y in self.path._current._moves_bin:
-            self.board[x][y] = 2
-        for x, y in self.marked:
-            self.board[x][y] = 1
-        if self.path._current._block_moves:
-            for x, y in self.path._current._block_moves:
-                self.board[x][y] = 4
-        x, y = self.current_pos
-        self.board[x][y] = 3
+        self._updateboard()
         for row in self.board:
             q_print = []
             for place in row:
-
                 if place == 0:
                     q_print.append("\U0001F535")
                 elif place == 1:
@@ -146,7 +172,8 @@ class CastleQueenSide:
 
             print(q_print)
 
-        print('\n')
+        print("\n")
+
     def _bad_pathcheck(self, arg: tuple[Any, Any]) -> bool:
         """
         Create a check that takes the x, y positional input and checks the current board layout against any
@@ -161,9 +188,9 @@ class CastleQueenSide:
         else:
             return True
 
-
     def _check_moves(self) -> None:
-        self.avail_moves = set()
+        while self.path._current._moves_bin:
+            self.path._current._moves_bin.pop()
         """
         This method checks the available moves for the knight and adds them to the class attribute self.avail_moves
 
@@ -178,27 +205,52 @@ class CastleQueenSide:
             check_pos = (new_x, new_y)
             if new_x < 0 or new_x > 7 or new_y < 0 or new_y > 7:
                 continue
-            self.path._current._moves_bin.add((new_x, new_y))
-        self._boardprint()
+            if (
+                check_pos not in self.marked and check_pos not in self.path._current._block_moves.keys()
+            ):
+                self.path._current._moves_bin.add((new_x, new_y))
+            elif check_pos in self.path._current._block_moves.keys():
+                flag = False
+                for board in self.path._current._block_moves[check_pos]:
+                    if isinstance(board, numpy.ndarray):
+                        if not numpy.array_equal(self.board, board):
+                            continue
+                        else:
+                            print(f'FLAGGED\n')
+                            print(board)
+                            print('\n')
+                            print(self.board)
+                            flag = True
+                    else:
+                        continue
+                if not flag:
+                    self.path._current._moves_bin.add((new_x, new_y))
 
     def _backup_move(self):
+        """
+        This method removes the current node from the Path object, replacing with pointer to previous.
+        Sets old.current position on board to 0 (empty)
+        :return:
+        """
+        print(f'BACKED UP ONE \nOLD POS: {self.current_pos}')
         old_pos = self.current_pos
         old_x, old_y = self.current_pos[0], self.current_pos[1]
-        self.board[old_x][old_y] = 0
-        self.bad_paths[old_pos] = self.board
-        new_curr = self.path._remove_element(self.path._current._pos)
+        self.board[old_x][old_y] = OPEN
+        new_curr = self.path._remove_element()
         self.marked.remove(old_pos)
         self.current_pos = new_curr._pos
-        new_curr._block_moves.add(old_pos)
+        self._updateboard()
+        self._update_blockmoves(old_pos, self.board)
+        self._check_moves()
         return old_pos
 
     def start(self):
-
         count = 0
-        while count < 100:
+        while count < 500:
             # self.path._path_print()
-        # while not self.win:
+            # while not self.win:
             self._check_moves()
+            print(f'BOARD START MOVE: {count}')
             self._boardprint()
             """
             I have to use the node itself to store the 'bad paths' data for decision making.  Its only at each
@@ -206,29 +258,27 @@ class CastleQueenSide:
             should no longer exist on the board because the state of the game is altered.
             """
             if not self.path._current._moves_bin:
+                print("***************** DEAD END *******************")
                 self._backup_move()
-                old = None
-                while self.path._current._moves == 1:
-                    old = self._backup_move()
-                if self.path._current._moves >= 2 and old:
-                    self.path._current._block_moves.add(old)
+                print(f'BOARD AFTER BACKUP: {count}')
+                self._boardprint()
                 count += 1
             else:
+                print(f'MAKING A MOVE')
                 t_choice = random.choice([x for x in self.path._current._moves_bin])
                 cx = t_choice[0]
                 xy = t_choice[1]
-                self.path._add_element(pos=(cx, xy), moves=len(self.path._current._moves_bin))
+                self.path._add_element(
+                    pos=(cx, xy), moves=len(self.path._current._moves_bin)
+                )
                 self.marked.add((cx, xy))
                 self.current_pos = (cx, xy)
                 self.board[cx][xy] = 1
+                print(f'BOARD AFTER RANDOM MOVE: {count}')
+                self._boardprint()
                 count += 1
-
 
 
 if __name__ == "__main__":
     C = CastleQueenSide()
     C.start()
-
-
-
-
