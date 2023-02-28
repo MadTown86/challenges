@@ -93,7 +93,9 @@ class Path:
 class CastleQueenSide:
     def __init__(self, pos: tuple[int, int] = None) -> None:
         """
-
+        This program runs an algorithm to track the path of the Knight through the chess board array.
+        The goal is to store and output the path that will allow the knight to just land on each space of the board
+        only once.
 
         :param pos:
         """
@@ -106,6 +108,17 @@ class CastleQueenSide:
             True if len(self.avail_moves) == 0 and len(self.marked) == 64 else False
         )
         self.path = Path()
+        self.dead_end_count = 0
+        self.last_high_move_node = None
+
+    def _high_option_return(self):
+        self.path._current._prev._nextn = self.last_high_move_node
+
+        """
+        
+        :param Node: 
+        :return: 
+        """
 
     def _updateboard(self):
         for x in range(len(self.board)):
@@ -180,26 +193,32 @@ class CastleQueenSide:
         new_curr = self.path._remove_element()
         self.marked.remove(old_pos)
         self.current_pos = new_curr._pos
+        self.dead_end_count += 1
         self._updateboard()
         return old_pos
 
     def start(self):
         count = 0
-        while not self.win:
+        while len(self.marked) != 63:
+            input()
+            print(len(self.marked))
+            print(type(self.marked))
             # self.path._path_print()
             self._check_moves()
-            # self._boardprint()
+            self._boardprint()
             """
             I have to use the node itself to store the 'bad paths' data for decision making.  Its only at each
             snapshot of the board/position do the decisions matter.  After that node is removed, then the 'bad' paths
             should no longer exist on the board because the state of the game is altered.
             """
             if not self.path._current._moves_bin:
-                # print("***************** DEAD END *******************")
-                self._backup_move()
-                # print(f'BOARD AFTER BACKUP: {count}')
-                # self._boardprint()
-                count += 1
+                while self.dead_end_count < 30:
+                    print("***************** DEAD END *******************")
+                    self._backup_move()
+                    print(f'BOARD AFTER BACKUP: {count}')
+                    self._boardprint()
+                    count += 1
+                self._high_option_return()
             else:
                 # print(f'MAKING A MOVE')
                 t_choice = random.choice([x for x in self.path._current._moves_bin])
@@ -212,8 +231,8 @@ class CastleQueenSide:
                 self.marked.add((cx, xy))
                 self.current_pos = (cx, xy)
                 self.board[cx][xy] = 1
-                # print(f'BOARD AFTER RANDOM MOVE: {count}')
-                # self._boardprint()
+                print(f'BOARD AFTER RANDOM MOVE: {count}')
+                self._boardprint()
                 count += 1
         return count
 
