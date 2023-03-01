@@ -199,7 +199,7 @@ class CastleQueenSide:
 
     def start(self):
         count = 0
-        while len(self.marked) != 63:
+        while len(self.marked) != 45:
             input()
             print(len(self.marked))
             print(type(self.marked))
@@ -234,9 +234,11 @@ class CastleQueenSide:
                 print(f'BOARD AFTER RANDOM MOVE: {count}')
                 self._boardprint()
                 count += 1
+        print("YOU DID IT")
         return count
 
 
 if __name__ == "__main__":
     C = CastleQueenSide()
     print(C.start())
+
