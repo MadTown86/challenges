@@ -41,7 +41,7 @@ class Path:
         self._tail._prev = self._head
         self._current = self._head
 
-    def _add_element(self, pos: tuple[int, int], moves: int = None) -> Node:
+    def _add_element(self, pos: tuple[int, int]) -> Node:
         """
         As a position is chosen, it will be added to the path.
 
@@ -179,6 +179,41 @@ class CastleQueenSide:
             else:
                 continue
 
+    def _check_proximity(self):
+        pdict = {}
+
+        proxim = [(1, 1), (1, 0), (0, 1), (-1, 1), (-1, -1), (-1, 0), (0, -1), (1, -1)]
+        proxim2 = [(2, 0), (2, 1), (2, 2), (0, 2), (1, 2), (-2, 2), (-2, 1), (-2, 0), (-2, -1), (-2, -2), (-1, -2),
+                   (0, -2), (1, -2), (2, -2)]
+        while self.path._current._moves_bin:
+            move = self.path._current._moves_bin.pop()
+            xc, yc = move[0], move[1]
+            marked_count = 0
+            for xp, yp in proxim:
+                new_xp = xc + xp
+                new_yp = yc + yp
+                if (new_xp, new_yp) in self.marked:
+                    marked_count += 1
+                # elif new_xp < 0 or new_xp > 7 or new_yp < 0 or new_yp > 7:
+                #     marked_count += 1
+
+            pdict[(xc, yc)] = marked_count
+
+        for key, value in pdict.items():
+            print(f'KEY: {key} -- VALUE: {value}')
+
+        lowest = 16
+        key_for_lowest = None
+        for key, value in pdict.items():
+            if value < lowest:
+                key_for_lowest = key
+                lowest = value
+
+        self.path._current._moves_bin.add(key_for_lowest)
+
+
+
+
 
     def _backup_move(self):
         """
@@ -194,49 +229,68 @@ class CastleQueenSide:
         self.marked.remove(old_pos)
         self.current_pos = new_curr._pos
         self.dead_end_count += 1
+        self._check_moves()
         self._updateboard()
         return old_pos
 
     def start(self):
         count = 0
-        while len(self.marked) != 45:
-            input()
-            print(len(self.marked))
-            print(type(self.marked))
-            # self.path._path_print()
-            self._check_moves()
-            self._boardprint()
-            """
-            I have to use the node itself to store the 'bad paths' data for decision making.  Its only at each
-            snapshot of the board/position do the decisions matter.  After that node is removed, then the 'bad' paths
-            should no longer exist on the board because the state of the game is altered.
-            """
-            if not self.path._current._moves_bin:
-                while self.dead_end_count < 30:
-                    print("***************** DEAD END *******************")
-                    self._backup_move()
-                    print(f'BOARD AFTER BACKUP: {count}')
+        bad_move_count = 0
+        click_count = 0
+        while len(self.marked) != 63:
+            while click_count < 50:
+                print(f'BAD MOVE COUNT: {bad_move_count}')
+                print(len(self.marked))
+                click_count += 1
+                # self.path._path_print()
+                self._check_moves()
+                if self.path._current._moves_bin:
+                    self._check_proximity()
+                self._boardprint()
+                """
+                I have to use the node itself to store the 'bad paths' data for decision making.  Its only at each
+                snapshot of the board/position do the decisions matter.  After that node is removed, then the 'bad' paths
+                should no longer exist on the board because the state of the game is altered.
+                """
+                if not self.path._current._moves_bin:
+                    if bad_move_count <= 500:
+                        while len(self.path._current._moves_bin) == 0:
+                            print("***************** DEAD END *******************")
+                            self._backup_move()
+                            bad_move_count += 1
+                            print(f'BOARD AFTER BACKUP: {count}')
+                            self._boardprint()
+                            count += 1
+                        self._high_option_return()
+                    else:
+                        for x in range(20):
+                            print("BACKUP LOOP")
+                            self._backup_move()
+                            count += 1
+                        bad_move_count = 0
+
+                else:
+                    # print(f'MAKING A MOVE')
+
+                    t_choice = random.choice([x for x in self.path._current._moves_bin])
+                    cx = t_choice[0]
+                    xy = t_choice[1]
+                    self.path._current._chosen.add((cx, xy))
+                    self.path._add_element(
+                        pos=(cx, xy)
+                    )
+                    self.marked.add((cx, xy))
+                    self.current_pos = (cx, xy)
+                    self.board[cx][xy] = 1
+                    print(f'BOARD AFTER RANDOM MOVE: {count}')
                     self._boardprint()
                     count += 1
-                self._high_option_return()
-            else:
-                # print(f'MAKING A MOVE')
-                t_choice = random.choice([x for x in self.path._current._moves_bin])
-                cx = t_choice[0]
-                xy = t_choice[1]
-                self.path._current._chosen.add((cx, xy))
-                self.path._add_element(
-                    pos=(cx, xy), moves=len(self.path._current._moves_bin)
-                )
-                self.marked.add((cx, xy))
-                self.current_pos = (cx, xy)
-                self.board[cx][xy] = 1
-                print(f'BOARD AFTER RANDOM MOVE: {count}')
-                self._boardprint()
-                count += 1
+
+            # input()
+            click_count = 0
+
         print("YOU DID IT")
         return count
-
 
 if __name__ == "__main__":
     C = CastleQueenSide()
