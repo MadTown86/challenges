@@ -13,7 +13,6 @@ class Node:
     """
     Basic doubly linked list node
     """
-
     __slots__ = "_pos", "_prev", "_nextn", "_moves_bin", "_chosen"
 
     def __init__(
@@ -173,6 +172,7 @@ class CastleQueenSide:
 
     def _check_proximity(self):
         pdict = {}
+        copy_moves = self.path._current._moves_bin
 
         proxim = [(1, 1), (1, 0), (0, 1), (-1, 1), (-1, -1), (-1, 0), (0, -1), (1, -1)]
         proxim2 = [(2, 0), (2, 1), (2, 2), (0, 2), (1, 2), (-2, 2), (-2, 1), (-2, 0), (-2, -1), (-2, -2), (-1, -2),
@@ -186,25 +186,46 @@ class CastleQueenSide:
                 new_yp = yc + yp
                 if (new_xp, new_yp) in self.marked:
                     marked_count += 1
-                # elif new_xp < 0 or new_xp > 7 or new_yp < 0 or new_yp > 7:
-                #     marked_count += 1
+
 
             pdict[(xc, yc)] = marked_count
 
         # for key, value in pdict.items():
         #     print(f'KEY: {key} -- VALUE: {value}')
+        mov_range = {}
+        for key, val in pdict.items():
+            mov_range.append((key, val))
 
-        lowest = 16
-        key_for_lowest = None
-        for key, value in pdict.items():
-            if value < lowest:
-                key_for_lowest = key
-                lowest = value
-
-        self.path._current._moves_bin.add(key_for_lowest)
+        mov_range.sort(key=mov_range[0][0][1])
+        if len(mov_range) >= 2:
 
 
 
+
+
+
+
+    def _outside_in(self):
+        temp_bin = []
+        moves_copy = []
+        while self.path._current._moves_bin:
+            move = self.path._current._moves_bin.pop()
+            moves_copy.append(move)
+            mx, my = move[0], move[1]
+            if 2 > mx >= 0 or 5 < mx <= 7 and 2 > my >= 0 or 5 < my <= 7:
+                # print('ADDED TO TEMPBIN')
+                temp_bin.append((mx, my))
+
+        if not temp_bin:
+            for item in moves_copy:
+                self.path._current._moves_bin.add(item)
+            del moves_copy
+        else:
+            for item in temp_bin:
+                self.path._current._moves_bin.add(item)
+
+        # for item in self.path._current._moves_bin:
+        #     print(f'AFTER OUTSIDE IN: {item}')
 
 
     def _backup_move(self):
@@ -231,12 +252,16 @@ class CastleQueenSide:
         bad_move_count = 0
         click_count = 0
         while len(self.marked) != 64:
-            while click_count < 100:
+            while click_count < 50:
                 # print(f'BAD MOVE COUNT: {bad_move_count}')
                 # print(len(self.marked))
                 click_count += 1
                 # self.path._path_print()
-                self._check_moves()
+                if len(self.marked) < 30:
+                    self._check_moves()
+                    self._outside_in()
+                else:
+                    self._check_moves()
                 if self.path._current._moves_bin:
                     self._check_proximity()
                 # self._boardprint()
