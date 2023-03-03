@@ -2,6 +2,7 @@ import random
 
 import numpy
 from typing import Self
+from time import perf_counter
 
 OPEN = 0
 MARKED = 1
@@ -111,15 +112,6 @@ class CastleQueenSide:
         self.dead_end_count = 0
         self.last_high_move_node = None
 
-    def _high_option_return(self):
-        self.path._current._prev._nextn = self.last_high_move_node
-
-        """
-        
-        :param Node: 
-        :return: 
-        """
-
     def _updateboard(self):
         for x in range(len(self.board)):
             for y in range(len(self.board[x])):
@@ -199,8 +191,8 @@ class CastleQueenSide:
 
             pdict[(xc, yc)] = marked_count
 
-        for key, value in pdict.items():
-            print(f'KEY: {key} -- VALUE: {value}')
+        # for key, value in pdict.items():
+        #     print(f'KEY: {key} -- VALUE: {value}')
 
         lowest = 16
         key_for_lowest = None
@@ -221,7 +213,7 @@ class CastleQueenSide:
         Sets old.current position on board to 0 (empty)
         :return:
         """
-        print(f'BACKED UP ONE \nOLD POS: {self.current_pos}')
+        # print(f'BACKED UP ONE \nOLD POS: {self.current_pos}')
         old_pos = self.current_pos
         old_x, old_y = self.current_pos[0], self.current_pos[1]
         self.board[old_x][old_y] = OPEN
@@ -234,47 +226,55 @@ class CastleQueenSide:
         return old_pos
 
     def start(self):
+        start = perf_counter()
         count = 0
         bad_move_count = 0
         click_count = 0
-        while len(self.marked) != 63:
-            while click_count < 50:
-                print(f'BAD MOVE COUNT: {bad_move_count}')
-                print(len(self.marked))
+        while len(self.marked) != 64:
+            while click_count < 100:
+                # print(f'BAD MOVE COUNT: {bad_move_count}')
+                # print(len(self.marked))
                 click_count += 1
                 # self.path._path_print()
                 self._check_moves()
                 if self.path._current._moves_bin:
                     self._check_proximity()
-                self._boardprint()
+                # self._boardprint()
                 """
                 I have to use the node itself to store the 'bad paths' data for decision making.  Its only at each
                 snapshot of the board/position do the decisions matter.  After that node is removed, then the 'bad' paths
                 should no longer exist on the board because the state of the game is altered.
                 """
                 if not self.path._current._moves_bin:
-                    if bad_move_count <= 500:
+                    if bad_move_count <= 1000:
                         while len(self.path._current._moves_bin) == 0:
-                            print("***************** DEAD END *******************")
+                            # print("***************** DEAD END *******************")
                             self._backup_move()
                             bad_move_count += 1
-                            print(f'BOARD AFTER BACKUP: {count}')
-                            self._boardprint()
+                            # print(f'BOARD AFTER BACKUP: {count}')
+                            # self._boardprint()
                             count += 1
-                        self._high_option_return()
                     else:
-                        for x in range(20):
-                            print("BACKUP LOOP")
+                        for x in range(35):
+                            # print("BACKUP LOOP")
                             self._backup_move()
                             count += 1
                         bad_move_count = 0
 
                 else:
                     # print(f'MAKING A MOVE')
-
-                    t_choice = random.choice([x for x in self.path._current._moves_bin])
-                    cx = t_choice[0]
-                    xy = t_choice[1]
+                    if (0, 0) in self.path._current._moves_bin:
+                        cx, xy = 0, 0
+                    elif (0, 7) in self.path._current._moves_bin:
+                        cx, xy = 0, 7
+                    elif (7, 0) in self.path._current._moves_bin:
+                        cx, xy = 7, 0
+                    elif (7, 7) in self.path._current._moves_bin:
+                        cx, xy = 7, 7
+                    else:
+                        t_choice = random.choice([x for x in self.path._current._moves_bin])
+                        cx = t_choice[0]
+                        xy = t_choice[1]
                     self.path._current._chosen.add((cx, xy))
                     self.path._add_element(
                         pos=(cx, xy)
@@ -282,15 +282,19 @@ class CastleQueenSide:
                     self.marked.add((cx, xy))
                     self.current_pos = (cx, xy)
                     self.board[cx][xy] = 1
-                    print(f'BOARD AFTER RANDOM MOVE: {count}')
-                    self._boardprint()
+                    # print(f'BOARD AFTER RANDOM MOVE: {count}')
+                    # self._boardprint()
                     count += 1
 
             # input()
             click_count = 0
 
         print("YOU DID IT")
-        return count
+        self.path._path_print()
+        self._boardprint()
+        print(bad_move_count)
+        stop = perf_counter()
+        return print(f'ACTION COUNT: {count}, TIME: {stop - start:.6f}')
 
 if __name__ == "__main__":
     C = CastleQueenSide()
