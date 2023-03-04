@@ -3,6 +3,7 @@ import random
 import numpy
 from typing import Self
 from time import perf_counter
+from collections import defaultdict
 
 OPEN = 0
 MARKED = 1
@@ -175,8 +176,6 @@ class CastleQueenSide:
         copy_moves = self.path._current._moves_bin
 
         proxim = [(1, 1), (1, 0), (0, 1), (-1, 1), (-1, -1), (-1, 0), (0, -1), (1, -1)]
-        proxim2 = [(2, 0), (2, 1), (2, 2), (0, 2), (1, 2), (-2, 2), (-2, 1), (-2, 0), (-2, -1), (-2, -2), (-1, -2),
-                   (0, -2), (1, -2), (2, -2)]
         while self.path._current._moves_bin:
             move = self.path._current._moves_bin.pop()
             xc, yc = move[0], move[1]
@@ -190,20 +189,28 @@ class CastleQueenSide:
 
             pdict[(xc, yc)] = marked_count
 
-        # for key, value in pdict.items():
-        #     print(f'KEY: {key} -- VALUE: {value}')
-        mov_range = {}
+        # for key, val in pdict.items():
+        #     print(f'KEY: {key}, VALUE: {val}')
+
+
+        mov_range = defaultdict(list)
         for key, val in pdict.items():
-            mov_range.append((key, val))
+            mov_range[val].append(key)
 
-        mov_range.sort(key=mov_range[0][0][1])
-        if len(mov_range) >= 2:
+        # for key, val in mov_range.items():
+        #     print(f'MOV_RANGE KEY: {key}, VAL: {val}')
 
+        lowest = min(x for x in mov_range.keys())
 
-
-
-
-
+        # print(f'LOWEST: {lowest}')
+        if mov_range:
+            if len(mov_range[lowest]) > 1:
+                for val in [x for x in mov_range[lowest]]:
+                    self.path._current._moves_bin.add(val)
+            else:
+                self.path._current._moves_bin.add(mov_range[lowest][0])
+        else:
+            self.path._current._moves_bin = copy_moves
 
     def _outside_in(self):
         temp_bin = []
@@ -252,6 +259,7 @@ class CastleQueenSide:
         bad_move_count = 0
         click_count = 0
         while len(self.marked) != 64:
+            # input()
             while click_count < 50:
                 # print(f'BAD MOVE COUNT: {bad_move_count}')
                 # print(len(self.marked))
