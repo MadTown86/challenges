@@ -4,6 +4,7 @@ import numpy
 from typing import Self
 from time import perf_counter
 from collections import defaultdict
+import statistics
 
 OPEN = 0
 MARKED = 1
@@ -32,7 +33,9 @@ class Node:
 
 class Path:
     """
-    A flavor of doubly linked list abstraction
+    A flavor of doubly linked list abstraction.
+    Add to list when a position is chosen
+    Remove from tail of list when '_backup' is called
     """
 
     def __init__(self) -> None:
@@ -46,7 +49,6 @@ class Path:
         """
         As a position is chosen, it will be added to the path.
 
-        As of right now I am making it return the self.current node but may remove it as unnecessary
         :param pos:
         :return:
         """
@@ -62,8 +64,6 @@ class Path:
         """
         The only remove requirement would be to backtrack from a 'no moves left' situation
 
-        This 'may' only become necessary if I want to build-in a backtracking mechanism to go to the last position
-        which had available positions not already found bad
         :param pos:
         :return:
         """
@@ -76,19 +76,19 @@ class Path:
 
     def _path_print(self):
         """
-        Prints current path in points
+        Prints current path and total move count
         :return:
         """
         print("*******************************START*****************************\n")
         print(f'CURRENT NODE: {self._current._pos}')
         node_print = self._head
+        count = 0
         while node_print._nextn:
+            count += 1
             print(f'POSITION: {node_print._pos}')
-            print(f'CHOSEN ON NODE: {node_print._chosen}')
             node_print = node_print._nextn
-        print(node_print._pos)
+        print(f'PATH MOVE COUNT: {count}')
         print("********************************END******************************\n")
-    pass
 
 
 class CastleQueenSide:
@@ -96,7 +96,16 @@ class CastleQueenSide:
         """
         This program runs an algorithm to track the path of the Knight through the chess board array.
         The goal is to store and output the path that will allow the knight to just land on each space of the board
-        only once.
+        only once.  The Knight does NOT land back on its starting position.
+
+        There are a few features to be aware of:
+        1. The path chosen is not completely random.  The choices are first narrowed by prioritizing the outer two
+        layers of the matrix, corners in addition to a position with the most free and available moves around it
+        (un-marked).  Then it was just prioritizing moves by proximity to un-marked spaces.
+        2. When the path reaches a dead-end it will back-track to the position that has an available move.
+        3. Despite this 'backtracking' algorithm.  The amount of available moves upon even ONE incorrect path is
+        enormous.  I found it was better to backtrack by a larger chunk of moves after a certain amount of bad
+        moves were found.
 
         :param pos:
         """
@@ -105,9 +114,6 @@ class CastleQueenSide:
         self.current_pos = (7, 1)
         self.marked = set()
         self.marked.add((7, 1))
-        self.win = (
-            True if len(self.avail_moves) == 0 and len(self.marked) == 64 else False
-        )
         self.path = Path()
         self.dead_end_count = 0
         self.last_high_move_node = None
@@ -332,4 +338,19 @@ class CastleQueenSide:
 if __name__ == "__main__":
     C = CastleQueenSide()
     print(C.start())
+
+    def counterit(func, number: int = 5):
+        l = []
+        while number:
+            start = perf_counter()
+            print(func())
+            stop = perf_counter()
+            l.append(stop-start)
+            number -= 1
+        print(f'MIN: {min(l):.4f}')
+        print(f'MAX: {max(l):.4f}')
+        print(f'MEAN: {statistics.mean(l):.4f}')
+
+
+    counterit(C.start, 10)
 
