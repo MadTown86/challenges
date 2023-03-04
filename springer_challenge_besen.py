@@ -11,10 +11,12 @@ MARKED = 1
 MOVES = 2
 CURRENT = 3
 
+
 class Node:
     """
     Basic doubly linked list node
     """
+
     __slots__ = "_pos", "_prev", "_nextn", "_moves_bin", "_chosen"
 
     def __init__(
@@ -22,7 +24,6 @@ class Node:
         pos: tuple[int, int] = None,
         prev: Self = None,
         nextn: Self = None,
-
     ):
         self._pos = pos
         self._prev = prev
@@ -63,16 +64,21 @@ class Path:
     def _remove_element(self) -> Node:
         """
         The only remove requirement would be to backtrack from a 'no moves left' situation
-
         :param pos:
         :return:
         """
-        self._current._prev._nextn = self._current._nextn # Removing prior nodes connection to existing node
-        self._current._nextn._prev = self._current._prev # Removing following node's connection to existing node
-        self._current = self._current._prev # Altering the paths self._current to become the previous node
-        while self._current._moves_bin: # Removing its current bin for updating
+        self._current._prev._nextn = (
+            self._current._nextn
+        )
+        self._current._nextn._prev = (
+            self._current._prev
+        )
+        self._current = (
+            self._current._prev
+        )
+        while self._current._moves_bin:
             self._current._moves_bin.pop()
-        return self._current
+        return self._current  # used
 
     def _path_print(self):
         """
@@ -80,14 +86,14 @@ class Path:
         :return:
         """
         print("*******************************START*****************************\n")
-        print(f'CURRENT NODE: {self._current._pos}')
+        print(f"CURRENT NODE: {self._current._pos}")
         node_print = self._head
         count = 0
         while node_print._nextn:
             count += 1
-            print(f'POSITION: {node_print._pos}')
+            print(f"POSITION: {node_print._pos}")
             node_print = node_print._nextn
-        print(f'PATH MOVE COUNT: {count}')
+        print(f"PATH MOVE COUNT: {count}")
         print("********************************END******************************\n")
 
 
@@ -118,7 +124,10 @@ class CastleQueenSide:
         self.dead_end_count = 0
         self.last_high_move_node = None
 
-    def _updateboard(self):
+    def _updateboard(self) -> None:
+        """
+        This method updates the board layout to match current field for printing purposes
+        """
         for x in range(len(self.board)):
             for y in range(len(self.board[x])):
                 self.board[x][y] = OPEN
@@ -129,9 +138,9 @@ class CastleQueenSide:
         x, y = self.current_pos
         self.board[x][y] = CURRENT
 
-    def _boardprint(self):
+    def _boardprint(self) -> None:
         """
-        This method prints the current board layout to stdout using black, white and blue emojis.
+        This method prints the current board layout to stdout using black, white, blue, and red emojis.
         :return:
         """
         self._updateboard()
@@ -154,13 +163,13 @@ class CastleQueenSide:
         print("\n")
 
     def _check_moves(self) -> None:
-        while self.path._current._moves_bin:
-            self.path._current._moves_bin.pop()
         """
         This method checks the available moves for the knight and adds them to the class attribute self.avail_moves
-
         :return: None
         """
+        while self.path._current._moves_bin:
+            self.path._current._moves_bin.pop()
+
         x, y = self.current_pos
         moves = [(-2, -1), (-2, 1), (2, -1), (2, 1), (-1, 2), (1, 2), (-1, -2), (1, -2)]
 
@@ -171,13 +180,18 @@ class CastleQueenSide:
             if new_x < 0 or new_x > 7 or new_y < 0 or new_y > 7:
                 continue
             if (
-                check_pos not in self.marked and check_pos not in self.path._current._chosen
+                check_pos not in self.marked
+                and check_pos not in self.path._current._chosen
             ):
                 self.path._current._moves_bin.add((new_x, new_y))
             else:
                 continue
 
-    def _check_proximity(self):
+    def _check_proximity(self) -> None:
+        """
+        Ranks existing available moves by their proximity to 'marked' locations
+        LOWER IS BETTER
+        """
         pdict = {}
         copy_moves = self.path._current._moves_bin
 
@@ -192,23 +206,14 @@ class CastleQueenSide:
                 if (new_xp, new_yp) in self.marked:
                     marked_count += 1
 
-
             pdict[(xc, yc)] = marked_count
-
-        # for key, val in pdict.items():
-        #     print(f'KEY: {key}, VALUE: {val}')
-
 
         mov_range = defaultdict(list)
         for key, val in pdict.items():
             mov_range[val].append(key)
 
-        # for key, val in mov_range.items():
-        #     print(f'MOV_RANGE KEY: {key}, VAL: {val}')
-
         lowest = min(x for x in mov_range.keys())
 
-        # print(f'LOWEST: {lowest}')
         if mov_range:
             if len(mov_range[lowest]) > 1:
                 for val in [x for x in mov_range[lowest]]:
@@ -218,7 +223,12 @@ class CastleQueenSide:
         else:
             self.path._current._moves_bin = copy_moves
 
-    def _outside_in(self):
+    def _outside_in(self) -> None:
+        """
+        This method is meant to prioritize moves along the outer perimeter of the board first.
+        After a certain number of moves, it stops excluding moves through the center of the board.
+        Outer Perimter: 2 layers
+        """
         temp_bin = []
         moves_copy = []
         while self.path._current._moves_bin:
@@ -226,7 +236,6 @@ class CastleQueenSide:
             moves_copy.append(move)
             mx, my = move[0], move[1]
             if 2 > mx >= 0 or 5 < mx <= 7 and 2 > my >= 0 or 5 < my <= 7:
-                # print('ADDED TO TEMPBIN')
                 temp_bin.append((mx, my))
 
         if not temp_bin:
@@ -237,17 +246,12 @@ class CastleQueenSide:
             for item in temp_bin:
                 self.path._current._moves_bin.add(item)
 
-        # for item in self.path._current._moves_bin:
-        #     print(f'AFTER OUTSIDE IN: {item}')
-
-
-    def _backup_move(self):
+    def _backup_move(self) -> tuple[int, int]:
         """
         This method removes the current node from the Path object, replacing with pointer to previous.
-        Sets old.current position on board to 0 (empty)
+
         :return:
         """
-        # print(f'BACKED UP ONE \nOLD POS: {self.current_pos}')
         old_pos = self.current_pos
         old_x, old_y = self.current_pos[0], self.current_pos[1]
         self.board[old_x][old_y] = OPEN
@@ -260,17 +264,19 @@ class CastleQueenSide:
         return old_pos
 
     def start(self):
+        """
+        Location of core game logic, game start.
+        :return:
+        """
         start = perf_counter()
         count = 0
         bad_move_count = 0
         click_count = 0
+        # Main loop - stops only when hits 64 positions in 'marked' bin
         while len(self.marked) != 64:
-            # input()
+            # exists only to provide a loop for printing an analyzing, can be removed
             while click_count < 50:
-                # print(f'BAD MOVE COUNT: {bad_move_count}')
-                # print(len(self.marked))
                 click_count += 1
-                # self.path._path_print()
                 if len(self.marked) < 30:
                     self._check_moves()
                     self._outside_in()
@@ -278,30 +284,23 @@ class CastleQueenSide:
                     self._check_moves()
                 if self.path._current._moves_bin:
                     self._check_proximity()
-                # self._boardprint()
-                """
-                I have to use the node itself to store the 'bad paths' data for decision making.  Its only at each
-                snapshot of the board/position do the decisions matter.  After that node is removed, then the 'bad' paths
-                should no longer exist on the board because the state of the game is altered.
-                """
+
                 if not self.path._current._moves_bin:
+                    # Every 1000 dead-end moves where Knight no longer had moves, back up 35 moves (or enter other)
                     if bad_move_count <= 1000:
                         while len(self.path._current._moves_bin) == 0:
-                            # print("***************** DEAD END *******************")
                             self._backup_move()
                             bad_move_count += 1
-                            # print(f'BOARD AFTER BACKUP: {count}')
-                            # self._boardprint()
+
                             count += 1
                     else:
-                        for x in range(35):
-                            # print("BACKUP LOOP")
+                        for x in range(35): # Alter this range to back up more/less moves at a time
                             self._backup_move()
                             count += 1
                         bad_move_count = 0
 
                 else:
-                    # print(f'MAKING A MOVE')
+                    # Prioritize corners, found that too many times just a fiew corners weren't hit
                     if (0, 0) in self.path._current._moves_bin:
                         cx, xy = 0, 0
                     elif (0, 7) in self.path._current._moves_bin:
@@ -311,21 +310,21 @@ class CastleQueenSide:
                     elif (7, 7) in self.path._current._moves_bin:
                         cx, xy = 7, 7
                     else:
-                        t_choice = random.choice([x for x in self.path._current._moves_bin])
+                        # Randomized choice after above move filters
+                        t_choice = random.choice(
+                            [x for x in self.path._current._moves_bin]
+                        )
                         cx = t_choice[0]
                         xy = t_choice[1]
                     self.path._current._chosen.add((cx, xy))
-                    self.path._add_element(
-                        pos=(cx, xy)
-                    )
+                    self.path._add_element(pos=(cx, xy))
                     self.marked.add((cx, xy))
                     self.current_pos = (cx, xy)
                     self.board[cx][xy] = 1
-                    # print(f'BOARD AFTER RANDOM MOVE: {count}')
                     # self._boardprint()
                     count += 1
-
-            # input()
+            # input() - remove the comment here to be able to click through and view 50 move intervals
+            # Remove comments on 'self._boardprint()' to view moves
             click_count = 0
 
         print("YOU DID IT")
@@ -333,24 +332,25 @@ class CastleQueenSide:
         self._boardprint()
         print(bad_move_count)
         stop = perf_counter()
-        return print(f'ACTION COUNT: {count}, TIME: {stop - start:.6f}')
+        return print(f"ACTION COUNT: {count}, TIME: {stop - start:.6f}")
+
 
 if __name__ == "__main__":
-    C = CastleQueenSide()
-    print(C.start())
+    # C = CastleQueenSide()
+    # print(C.start())
 
-    def counterit(func, number: int = 5):
+    def counterit(number: int = 5):
         l = []
         while number:
+            C = CastleQueenSide()
             start = perf_counter()
-            print(func())
+            C.start()
             stop = perf_counter()
-            l.append(stop-start)
+            l.append(stop - start)
             number -= 1
-        print(f'MIN: {min(l):.4f}')
-        print(f'MAX: {max(l):.4f}')
-        print(f'MEAN: {statistics.mean(l):.4f}')
+        print(f"MIN: {min(l):.4f}")
+        print(f"MAX: {max(l):.4f}")
+        print(f"MEAN: {statistics.mean(l):.4f}")
+        print(f"MEDIAN: {statistics.median(l)}")
 
-
-    counterit(C.start, 10)
-
+    counterit(100)
