@@ -300,7 +300,7 @@ class CastleQueenSide:
                         bad_move_count = 0
 
                 else:
-                    # Prioritize corners, found that too many times just a fiew corners weren't hit
+                    # Prioritize corners, many times unable to reach after rest filled
                     if (0, 0) in self.path._current._moves_bin:
                         cx, xy = 0, 0
                     elif (0, 7) in self.path._current._moves_bin:
