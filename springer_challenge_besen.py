@@ -98,7 +98,7 @@ class Path:
 
 
 class CastleQueenSide:
-    def __init__(self, pos: tuple[int, int] = None) -> None:
+    def __init__(self, pos: tuple[int, int] = (7, 1)) -> None:
         """
         This program runs an algorithm to track the path of the Knight through the chess board array.
         The goal is to store and output the path that will allow the knight to just land on each space of the board
@@ -117,9 +117,9 @@ class CastleQueenSide:
         """
         self.board = numpy.array(8 * [8 * [OPEN]])
         self.avail_moves = set()
-        self.current_pos = (7, 1)
+        self.current_pos = pos
         self.marked = set()
-        self.marked.add((7, 1))
+        self.marked.add(pos)
         self.path = Path()
         self.dead_end_count = 0
         self.last_high_move_node = None
@@ -191,6 +191,7 @@ class CastleQueenSide:
         """
         Ranks existing available moves by their proximity to 'marked' locations
         LOWER IS BETTER
+        Refines self.path._current._moves_bin and limits available
         """
         pdict = {}
         copy_moves = self.path._current._moves_bin
@@ -274,7 +275,7 @@ class CastleQueenSide:
         click_count = 0
         # Main loop - stops only when hits 64 positions in 'marked' bin
         while len(self.marked) != 64:
-            # exists only to provide a loop for printing an analyzing, can be removed
+            # below while loop exists only to provide a loop for printing and analyzing, can be removed
             while click_count < 50:
                 click_count += 1
                 if len(self.marked) < 30:
@@ -291,10 +292,9 @@ class CastleQueenSide:
                         while len(self.path._current._moves_bin) == 0:
                             self._backup_move()
                             bad_move_count += 1
-
                             count += 1
                     else:
-                        for x in range(35): # Alter this range to back up more/less moves at a time
+                        for x in range(35):  # Alter this range to back up more/less moves at a time
                             self._backup_move()
                             count += 1
                         bad_move_count = 0
@@ -321,13 +321,15 @@ class CastleQueenSide:
                     self.marked.add((cx, xy))
                     self.current_pos = (cx, xy)
                     self.board[cx][xy] = 1
+                    # Remove comment below for visualization of board layout 'self._boardprint()'
                     # self._boardprint()
                     count += 1
+            # Remove below comment on line 328 - 'input()' to be able to halt the algorithm and review print results
             # input() - remove the comment here to be able to click through and view 50 move intervals
             # Remove comments on 'self._boardprint()' to view moves
             click_count = 0
 
-        print("YOU DID IT")
+        print("YOU DID IT") # Because you did it
         self.path._path_print()
         self._boardprint()
         print(bad_move_count)
@@ -339,7 +341,13 @@ if __name__ == "__main__":
     # C = CastleQueenSide()
     # print(C.start())
 
-    def counterit(number: int = 5):
+    def counterit(number: int = 5) -> None:
+        """
+        Simple run, analysis tool that will run the algorithm 'number' amount of times and output minor
+        statistics about the lot.
+        :param number:
+        :return: None
+        """
         l = []
         while number:
             C = CastleQueenSide()
@@ -353,4 +361,4 @@ if __name__ == "__main__":
         print(f"MEAN: {statistics.mean(l):.4f}")
         print(f"MEDIAN: {statistics.median(l)}")
 
-    counterit(100)
+    counterit(3)
