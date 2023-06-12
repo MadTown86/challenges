@@ -37,6 +37,11 @@ class GildedRose(object):
 
 
     def update_quality2(self):
+        """
+        Runs roughly %30 faster than legacy but did not try to isolate process, most likely building of 'Items'
+        included in analysis.
+        :return:
+        """
         for item in self.items:
             # Skip any legendary items
             if item.name == "Sulfuras, Hand of Ragnaros":
